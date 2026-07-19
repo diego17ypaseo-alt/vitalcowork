@@ -71,23 +71,64 @@ export async function GET(request: Request) {
   }
 
   // Prueba directa del Botón de Pagos Payphone (?payphone=1):
-  // prepara una transacción de $1 y reporta la respuesta cruda
+  // varias variantes del Prepare para acorralar la causa del error
   if (new URL(request.url).searchParams.get("payphone") === "1") {
-    try {
-      const origen = new URL(request.url).origin;
-      const prep = await prepararPagoPayphone({
-        montoUsd: 1,
-        clientTransactionId: "dg" + (Date.now() % 100000000), // ≤ 15 caracteres
-        referencia: "Diagnostico VitalCowork",
+    const origen = new URL(request.url).origin;
+    const token = (process.env.PAYPHONE_TOKEN ?? "").trim();
+    const storeId = (process.env.PAYPHONE_STORE_ID ?? "").trim();
+    resultado.token_formato = {
+      largo: token.length,
+      con_espacios: token !== process.env.PAYPHONE_TOKEN,
+      inicia: token.slice(0, 4),
+      caracteres_validos: /^[A-Za-z0-9+/=._-]+$/.test(token),
+      store_largo: storeId.length,
+      store_valido: /^[A-Za-z0-9-]+$/.test(storeId),
+    };
+
+    const probar = async (nombre: string, body: Record<string, unknown>) => {
+      try {
+        const res = await fetch(
+          "https://pay.payphonetodoesposible.com/api/button/Prepare",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(body),
+          }
+        );
+        const texto = await res.text();
+        return {
+          variante: nombre,
+          status: res.status,
+          respuesta: texto.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 220),
+        };
+      } catch (e) {
+        return { variante: nombre, excepcion: e instanceof Error ? e.message : String(e) };
+      }
+    };
+
+    const base = {
+      amount: 100,
+      amountWithoutTax: 100,
+      tax: 0,
+      currency: "USD",
+      reference: "Diagnostico VitalCowork",
+      clientTransactionId: "dg" + (Date.now() % 10000000),
+      responseUrl: `${origen}/pago/respuesta`,
+    };
+    resultado.payphone_variantes = [
+      await probar("completa_con_storeId", { ...base, storeId }),
+      await probar("sin_storeId", base),
+      await probar("minima", {
+        amount: 100,
+        amountWithoutTax: 100,
+        currency: "USD",
+        clientTransactionId: "dg" + ((Date.now() + 1) % 10000000),
         responseUrl: `${origen}/pago/respuesta`,
-        cancellationUrl: `${origen}/pago/nuevo`,
-      });
-      resultado.payphone_prueba = { ok: true, tieneUrl: Boolean(prep.payWithCard) };
-    } catch (e) {
-      resultado.payphone_prueba = {
-        error: e instanceof Error ? e.message : String(e),
-      };
-    }
+      }),
+    ];
   }
 
   // Reproduce la consulta de la pantalla Aprobaciones con la sesión del admin demo
