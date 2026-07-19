@@ -33,7 +33,8 @@ export async function POST(request: Request) {
   try {
     const prep = await prepararPagoPayphone({
       montoUsd: Number(pago.monto),
-      clientTransactionId: pago.id,
+      // Payphone limita clientTransactionId a 15 caracteres: usamos el recibo
+      clientTransactionId: `VC-${pago.numero_recibo}`,
       referencia: `VitalCowork recibo ${pago.numero_recibo}`,
       responseUrl: `${origen}/pago/respuesta`,
       cancellationUrl: `${origen}/pago/nuevo?pago=${pago.id}&cancelado=1`,

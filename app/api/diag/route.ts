@@ -77,7 +77,7 @@ export async function GET(request: Request) {
       const origen = new URL(request.url).origin;
       const prep = await prepararPagoPayphone({
         montoUsd: 1,
-        clientTransactionId: "diag-" + Date.now(),
+        clientTransactionId: "dg" + (Date.now() % 100000000), // ≤ 15 caracteres
         referencia: "Diagnostico VitalCowork",
         responseUrl: `${origen}/pago/respuesta`,
         cancellationUrl: `${origen}/pago/nuevo`,
