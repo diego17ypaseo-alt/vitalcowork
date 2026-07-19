@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { prepararPagoPayphone } from "@/lib/payphone";
 
 // Diagnóstico TEMPORAL de conexión (se elimina tras la puesta en marcha).
 // No expone secretos: solo prefijos y mensajes de error.
@@ -67,6 +68,26 @@ export async function GET(request: Request) {
     }
   } catch (e) {
     resultado.excepcion_admin = e instanceof Error ? e.message : String(e);
+  }
+
+  // Prueba directa del Botón de Pagos Payphone (?payphone=1):
+  // prepara una transacción de $1 y reporta la respuesta cruda
+  if (new URL(request.url).searchParams.get("payphone") === "1") {
+    try {
+      const origen = new URL(request.url).origin;
+      const prep = await prepararPagoPayphone({
+        montoUsd: 1,
+        clientTransactionId: "diag-" + Date.now(),
+        referencia: "Diagnostico VitalCowork",
+        responseUrl: `${origen}/pago/respuesta`,
+        cancellationUrl: `${origen}/pago/nuevo`,
+      });
+      resultado.payphone_prueba = { ok: true, tieneUrl: Boolean(prep.payWithCard) };
+    } catch (e) {
+      resultado.payphone_prueba = {
+        error: e instanceof Error ? e.message : String(e),
+      };
+    }
   }
 
   // Reproduce la consulta de la pantalla Aprobaciones con la sesión del admin demo
