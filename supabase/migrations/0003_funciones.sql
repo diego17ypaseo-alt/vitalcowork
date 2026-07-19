@@ -598,12 +598,20 @@ declare
   v_actor uuid := auth.uid();
   v_manager boolean := es_comanager();
   v_total numeric;
+  v_perfiles int;
   v_profile uuid;
   v_pago uuid;
 begin
-  select sum(precio), min(profile_id) into v_total, v_profile
+  select sum(precio), count(distinct profile_id) into v_total, v_perfiles
   from reservations where id = any(p_reservas) and estado = 'pendiente_pago' and pago_id is null;
   if v_total is null then raise exception 'SIN_RESERVAS_PENDIENTES'; end if;
+  if v_perfiles <> 1 then
+    raise exception 'RESERVAS_MIXTAS: todas las reservas del pago deben ser del mismo profesional';
+  end if;
+  select profile_id into v_profile
+  from reservations
+  where id = any(p_reservas) and estado = 'pendiente_pago' and pago_id is null
+  limit 1;
   if v_profile <> v_actor and not v_manager then raise exception 'SIN_PERMISO'; end if;
   if p_metodo = 'efectivo' and not v_manager then
     raise exception 'EFECTIVO_SOLO_VENTANILLA: el pago en efectivo lo registra recepción';
