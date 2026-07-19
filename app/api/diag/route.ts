@@ -44,5 +44,30 @@ export async function GET(request: Request) {
     resultado.excepcion = e instanceof Error ? e.message : String(e);
   }
 
+  // Vista de servidor (service role): estados de perfiles y acreditaciones,
+  // sin datos personales
+  try {
+    if (service) {
+      const admin = createClient(url, service, { auth: { persistSession: false } });
+      const { data: perfiles, error: ep } = await admin
+        .from("profiles")
+        .select("rol, estado, alias, creado_en")
+        .order("creado_en", { ascending: false });
+      resultado.perfiles = ep ? { error: ep.message } : perfiles;
+      const { data: usuarios } = await admin.auth.admin.listUsers({ perPage: 20 });
+      resultado.usuarios_auth = usuarios?.users?.map((u) => ({
+        email_dominio: u.email?.split("@")[1],
+        confirmado: Boolean(u.email_confirmed_at),
+        creado: u.created_at,
+      }));
+      const { data: acred } = await admin
+        .from("accreditations")
+        .select("estado, creado_en");
+      resultado.acreditaciones = acred;
+    }
+  } catch (e) {
+    resultado.excepcion_admin = e instanceof Error ? e.message : String(e);
+  }
+
   return NextResponse.json(resultado);
 }
