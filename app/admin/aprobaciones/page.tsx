@@ -28,7 +28,7 @@ export default function PaginaAprobaciones() {
   const cargar = useCallback(async () => {
     const { data } = await supabase
       .from("profiles")
-      .select("id, nombre_completo, cedula, email, telefono, alias, creado_en, specialties(nombre), accreditations(id, tipo, numero, documento_path)")
+      .select("id, nombre_completo, cedula, email, telefono, alias, creado_en, specialties(nombre), accreditations!accreditations_profile_id_fkey(id, tipo, numero, documento_path)")
       .eq("estado", "pendiente")
       .eq("rol", "comed")
       .order("creado_en");

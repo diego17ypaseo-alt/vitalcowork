@@ -83,7 +83,7 @@ export async function GET(request: Request) {
       const { data: pend, error: ePend } = await cli
         .from("profiles")
         .select(
-          "id, nombre_completo, alias, specialties(nombre), accreditations(id, tipo, estado)"
+          "id, nombre_completo, alias, specialties(nombre), accreditations!accreditations_profile_id_fkey(id, tipo, estado)"
         )
         .eq("estado", "pendiente")
         .eq("rol", "comed");

@@ -8,7 +8,7 @@ export default async function PaginaComeds() {
   const supabase = await crearClienteServidor();
   const { data: comeds } = await supabase
     .from("profiles")
-    .select("id, nombre_completo, alias, estado, reincidencias_excedente, specialties(nombre), ratings(estrellas)")
+    .select("id, nombre_completo, alias, estado, reincidencias_excedente, specialties(nombre), ratings!ratings_profile_id_fkey(estrellas)")
     .eq("rol", "comed")
     .order("nombre_completo");
 

@@ -13,7 +13,7 @@ export async function GET(
   // RLS: solo el dueño del pago o el co-manager pueden verlo
   const { data: pago } = await supabase
     .from("payments")
-    .select("*, profiles(nombre_completo, cedula, email)")
+    .select("*, profiles!payments_profile_id_fkey(nombre_completo, cedula, email)")
     .eq("id", id)
     .maybeSingle();
   if (!pago) return NextResponse.json({ error: "No encontrado" }, { status: 404 });

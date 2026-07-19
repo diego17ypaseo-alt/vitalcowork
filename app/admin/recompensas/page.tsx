@@ -27,7 +27,7 @@ export default function PaginaRecompensasAdmin() {
   const cargar = useCallback(async () => {
     const { data } = await supabase
       .from("referrals")
-      .select("id, paciente_iniciales, estado, creado_en, nota, profiles(nombre_completo), reward_catalog(estudio, horas)")
+      .select("id, paciente_iniciales, estado, creado_en, nota, profiles!referrals_profile_id_fkey(nombre_completo), reward_catalog(estudio, horas)")
       .order("creado_en", { ascending: false })
       .limit(60);
     setSolicitudes((data as unknown as Solicitud[]) ?? []);

@@ -74,7 +74,7 @@ export function Ventanilla({
       supabase.from("profiles").select("id, nombre_completo, cedula")
         .eq("rol", "comed").eq("estado", "aprobado").order("nombre_completo"),
       supabase.from("payments")
-        .select("id, numero_recibo, monto, metodo, comprobante_path, creado_en, profiles(nombre_completo), packages(plan_id, horas_total)")
+        .select("id, numero_recibo, monto, metodo, comprobante_path, creado_en, profiles!payments_profile_id_fkey(nombre_completo), packages(plan_id, horas_total)")
         .eq("estado", "pendiente").order("creado_en"),
       supabase.from("reservations")
         .select("id, fecha, hora, estado, profiles(nombre_completo)")
