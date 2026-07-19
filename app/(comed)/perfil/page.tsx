@@ -19,7 +19,7 @@ export default async function PaginaPerfil() {
         : Promise.resolve({ data: null }),
       supabase.from("accreditations").select("tipo, numero, estado").eq("profile_id", perfil.id),
       supabase.from("packages").select("*, plans(nombre)").eq("profile_id", perfil.id).order("creado_en", { ascending: false }).limit(5),
-      supabase.from("payments").select("id, numero_recibo, monto, metodo, estado, creado_en").eq("profile_id", perfil.id).order("creado_en", { ascending: false }).limit(10),
+      supabase.from("payments").select("id, numero_recibo, monto, metodo, estado, comprobante_path, creado_en").eq("profile_id", perfil.id).order("creado_en", { ascending: false }).limit(10),
       supabase.from("notifications").select("id, titulo, cuerpo, creado_en").order("creado_en", { ascending: false }).limit(10),
     ]);
 
@@ -93,9 +93,15 @@ export default async function PaginaPerfil() {
                 <span className="flex items-center gap-2">
                   <b>{formatoUSD(Number(p.monto))}</b>
                   <InsigniaEstado estado={p.estado} />
-                  <a href={`/api/recibo/${p.id}`} target="_blank" className="text-xs font-semibold text-primario underline">
-                    recibo
-                  </a>
+                  {p.estado === "pendiente" && !p.comprobante_path ? (
+                    <Link href={`/pago/nuevo?pago=${p.id}`} className="btn-primario !py-1 !px-2.5 text-xs">
+                      💳 Pagar
+                    </Link>
+                  ) : (
+                    <a href={`/api/recibo/${p.id}`} target="_blank" className="text-xs font-semibold text-primario underline">
+                      recibo
+                    </a>
+                  )}
                 </span>
               </li>
             ))}

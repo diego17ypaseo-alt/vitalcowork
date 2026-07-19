@@ -264,12 +264,18 @@ export function ListaReservas({
                       </button>
                     </>
                   )}
-                  {r.estado === "pendiente_pago" && !r.pago_id && (
+                  {r.estado === "pendiente_pago" && (
                     <button
-                      onClick={() => router.push(`/pago/nuevo?reservas=${r.id}`)}
+                      onClick={() =>
+                        router.push(
+                          r.pago_id
+                            ? `/pago/nuevo?pago=${r.pago_id}`
+                            : `/pago/nuevo?reservas=${r.id}`
+                        )
+                      }
                       className="btn-primario !py-2 text-xs"
                     >
-                      💳 Pagar
+                      💳 Completar pago
                     </button>
                   )}
                 </div>

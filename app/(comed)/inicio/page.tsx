@@ -14,7 +14,7 @@ export default async function PaginaInicio() {
   const supabase = await crearClienteServidor();
   const hoy = hoyGye();
 
-  const [{ data: monedero }, { data: proximas }, { data: notifs }] = await Promise.all([
+  const [{ data: monedero }, { data: proximas }, { data: notifs }, { data: pagosPendientes }] = await Promise.all([
     supabase.rpc("fn_resumen_monedero"),
     supabase
       .from("reservations")
@@ -26,6 +26,13 @@ export default async function PaginaInicio() {
       .from("notifications")
       .select("id, titulo, cuerpo, creado_en, leido_en")
       .is("leido_en", null)
+      .order("creado_en", { ascending: false })
+      .limit(3),
+    supabase
+      .from("payments")
+      .select("id, monto, comprobante_path")
+      .eq("profile_id", perfil.id)
+      .eq("estado", "pendiente")
       .order("creado_en", { ascending: false })
       .limit(3),
   ]);
@@ -63,6 +70,22 @@ export default async function PaginaInicio() {
           </p>
         )}
       </Tarjeta>
+
+      {/* Pagos pendientes de completar */}
+      {(pagosPendientes ?? [])
+        .filter((p) => !p.comprobante_path)
+        .map((p) => (
+          <Link
+            key={p.id}
+            href={`/pago/nuevo?pago=${p.id}`}
+            className="tarjeta flex items-center justify-between border-alerta/40 bg-alerta-suave/40 p-4"
+          >
+            <span className="text-sm font-bold">
+              💳 Tienes un pago pendiente de ${Number(p.monto).toFixed(2)}
+            </span>
+            <span className="text-alerta font-bold">Completar →</span>
+          </Link>
+        ))}
 
       <Link href="/calendario" className="btn-primario w-full py-3.5 text-base">
         📅 Reservar mi espacio

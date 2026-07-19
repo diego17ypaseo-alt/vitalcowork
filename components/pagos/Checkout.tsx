@@ -51,22 +51,36 @@ export function Checkout({
       if (pagoParam) {
         const { data: pago } = await supabase
           .from("payments")
-          .select("id, monto, estado, package_id, packages(plan_id, horas_total)")
+          .select("id, monto, estado, package_id, numero_recibo, comprobante_path, packages(plan_id, horas_total)")
           .eq("id", pagoParam)
           .maybeSingle();
         if (!pago) return setError("Pago no encontrado.");
         if (pago.estado !== "pendiente") return router.replace(`/pago/exito?pago=${pago.id}`);
         const pk = pago.packages as unknown as { plan_id: string; horas_total: number } | null;
-        setDetalle({
-          total: Number(pago.monto),
-          pagoId: pago.id,
-          lineas: [
-            {
-              texto: pk ? `Paquete ${pk.plan_id === "vip" ? "Ronda Médica VIP" : "Estancia Plus"} · ${pk.horas_total} horas` : "Pago pendiente",
-              monto: Number(pago.monto),
-            },
-          ],
-        });
+
+        // Detalle: reservas asociadas a este pago (si no es un paquete)
+        let lineas: { texto: string; monto: number }[];
+        if (pk) {
+          lineas = [{
+            texto: `Paquete ${pk.plan_id === "vip" ? "Ronda Médica VIP" : "Estancia Plus"} · ${pk.horas_total} horas`,
+            monto: Number(pago.monto),
+          }];
+        } else {
+          const { data: reservasPago } = await supabase
+            .from("reservations")
+            .select("fecha, hora, precio")
+            .eq("pago_id", pago.id)
+            .order("fecha");
+          lineas = (reservasPago ?? []).map((r) => ({
+            texto: `${formatoFechaCorta(r.fecha)} · ${formatoRangoHora(r.hora)}`,
+            monto: Number(r.precio),
+          }));
+          if (!lineas.length) lineas = [{ texto: "Pago pendiente", monto: Number(pago.monto) }];
+        }
+        setDetalle({ total: Number(pago.monto), pagoId: pago.id, lineas });
+
+        // Transferencia con comprobante ya enviado: mostrar estado, no re-cobrar
+        if (pago.comprobante_path) setTransferenciaLista(pago.numero_recibo);
       } else if (idsReservas.length) {
         const { data: reservas } = await supabase
           .from("reservations")
