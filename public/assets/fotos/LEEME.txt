@@ -1,0 +1,17 @@
+CARPETA DE FOTOS DEL ESTABLECIMIENTO
+====================================
+
+Guarda aquí las fotos reales del consultorio con ESTOS NOMBRES EXACTOS
+(JPG, idealmente horizontales; el carrusel las detecta automáticamente):
+
+  foto1.jpg   → recepción / counter con el letrero VitalCowork
+  foto2.jpg   → consultorio principal (escritorio, camilla)
+  foto3.jpg   → consultorio satélite (ecógrafo y electrocardiógrafo)
+  foto4.jpg   → área de procedimientos (sillón clínico azul)
+  foto5.jpg   → otra vista de las instalaciones
+
+Si falta alguna, el carrusel usa un placeholder y no se rompe.
+Para agregar más, edita la lista FOTOS en components/CarruselFotos.tsx.
+
+Consejo: fotos como la del baño/área de limpieza funcionan mejor en redes
+sociales que en la pantalla de bienvenida; prioriza recepción y consultorios.

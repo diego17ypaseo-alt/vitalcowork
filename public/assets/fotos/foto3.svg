@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1200">
+  <defs>
+    <linearGradient id="g3" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#155e70"/>
+      <stop offset="1" stop-color="#134e4a"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="1200" fill="url(#g3)"/>
+  <g opacity="0.12" fill="#ffffff" stroke="none">
+    <rect x="250" y="500" width="420" height="500" rx="24"/>
+    <polyline points="330,760 400,760 430,700 470,820 510,740 590,740" fill="none" stroke="#ffffff" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="800" y="640" width="550" height="360" rx="24"/>
+  </g>
+  <text x="800" y="420" text-anchor="middle" fill="#ffffff" opacity="0.55" font-family="sans-serif" font-size="54" font-weight="700">Consultorio satélite · foto placeholder</text>
+  <text x="800" y="490" text-anchor="middle" fill="#ffffff" opacity="0.4" font-family="sans-serif" font-size="34">Reemplazar con foto real en /assets/fotos</text>
+</svg>

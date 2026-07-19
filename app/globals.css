@@ -1,0 +1,148 @@
+@import "tailwindcss";
+
+/* ============================================================
+   VitalCowork — Design system
+   Paleta sobria tipo salud: verdes azulados profundos, superficies
+   claras, acentos por nivel de plan (Básico/Silver/Gold).
+   ============================================================ */
+
+:root {
+  color-scheme: light;
+  --vc-fondo: #f4f9f9;
+  --vc-tarjeta: #ffffff;
+  --vc-borde: #dbe7e9;
+  --vc-primario: #0e7490;
+  --vc-primario-oscuro: #155e70;
+  --vc-primario-suave: #e0f2f6;
+  --vc-acento: #0891b2;
+  --vc-tinta: #0f2733;
+  --vc-tinta-suave: #5b7280;
+  --vc-exito: #059669;
+  --vc-exito-suave: #d9f2e5;
+  --vc-alerta: #d97706;
+  --vc-alerta-suave: #fdf0dc;
+  --vc-peligro: #dc2626;
+  --vc-peligro-suave: #fde8e8;
+  --vc-oro: #b45309;
+  --vc-oro-suave: #fdf3e3;
+  --vc-plata: #64748b;
+  --vc-plata-suave: #eef2f6;
+}
+
+@theme inline {
+  --color-fondo: var(--vc-fondo);
+  --color-tarjeta: var(--vc-tarjeta);
+  --color-borde: var(--vc-borde);
+  --color-primario: var(--vc-primario);
+  --color-primario-oscuro: var(--vc-primario-oscuro);
+  --color-primario-suave: var(--vc-primario-suave);
+  --color-acento: var(--vc-acento);
+  --color-tinta: var(--vc-tinta);
+  --color-tinta-suave: var(--vc-tinta-suave);
+  --color-exito: var(--vc-exito);
+  --color-exito-suave: var(--vc-exito-suave);
+  --color-alerta: var(--vc-alerta);
+  --color-alerta-suave: var(--vc-alerta-suave);
+  --color-peligro: var(--vc-peligro);
+  --color-peligro-suave: var(--vc-peligro-suave);
+  --color-oro: var(--vc-oro);
+  --color-oro-suave: var(--vc-oro-suave);
+  --color-plata: var(--vc-plata);
+  --color-plata-suave: var(--vc-plata-suave);
+  --font-sans: var(--font-geist-sans);
+}
+
+body {
+  background: var(--vc-fondo);
+  color: var(--vc-tinta);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Utilidades base compuestas (Tailwind v4: @utility permite usarlas en @apply) */
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition active:scale-[0.98] disabled:opacity-45 disabled:pointer-events-none cursor-pointer select-none;
+}
+@utility bloque {
+  @apply relative flex items-center justify-center rounded-lg border text-[11px] font-semibold transition cursor-pointer select-none min-h-11;
+}
+
+@layer components {
+  .btn-primario {
+    @apply btn bg-primario text-white hover:bg-primario-oscuro shadow-sm;
+  }
+  .btn-secundario {
+    @apply btn bg-primario-suave text-primario-oscuro hover:bg-[#cde8ef];
+  }
+  .btn-fantasma {
+    @apply btn border border-borde bg-tarjeta text-tinta hover:bg-fondo;
+  }
+  .btn-peligro {
+    @apply btn bg-peligro-suave text-peligro hover:bg-[#fbd5d5];
+  }
+
+  /* Superficies */
+  .tarjeta {
+    @apply rounded-2xl border border-borde bg-tarjeta shadow-[0_1px_3px_rgba(15,39,51,0.06)];
+  }
+  .campo {
+    @apply w-full rounded-xl border border-borde bg-tarjeta px-3.5 py-2.5 text-sm text-tinta outline-none placeholder:text-tinta-suave/60 focus:border-acento focus:ring-2 focus:ring-acento/20;
+  }
+  .etiqueta {
+    @apply mb-1 block text-xs font-semibold text-tinta-suave uppercase tracking-wide;
+  }
+  .insignia {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold;
+  }
+
+  /* Estados de bloque del calendario */
+  .bloque-disponible {
+    @apply bloque border-borde bg-tarjeta text-tinta-suave hover:border-acento hover:text-primario;
+  }
+  .bloque-seleccionado {
+    @apply bloque border-primario bg-primario text-white shadow-md;
+  }
+  .bloque-reservado {
+    @apply bloque border-primario/20 bg-primario-suave text-primario-oscuro cursor-default;
+  }
+  .bloque-mio {
+    @apply bloque border-exito/40 bg-exito-suave text-exito cursor-default;
+  }
+  .bloque-en-curso {
+    @apply bloque border-alerta/50 bg-alerta-suave text-alerta cursor-default animate-pulse;
+  }
+  .bloque-completado {
+    @apply bloque border-borde bg-fondo text-tinta-suave/60 cursor-default;
+  }
+  .bloque-bloqueado,
+  .bloque-receso {
+    @apply bloque cursor-not-allowed border-borde/60 text-tinta-suave/50;
+    background-image: repeating-linear-gradient(
+      -45deg,
+      #eef3f4 0 6px,
+      #f7fafa 6px 12px
+    );
+  }
+  .bloque-pasado {
+    @apply bloque cursor-not-allowed border-transparent bg-transparent text-tinta-suave/30;
+  }
+}
+
+/* Animación de la aguja del tensiómetro */
+.aguja-tensiometro {
+  transition: transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: 100px 100px;
+}
+@keyframes bombear {
+  0%, 100% { transform: scale(1); }
+  30% { transform: scale(0.88); }
+  60% { transform: scale(1.05); }
+}
+.pera-bombeando {
+  animation: bombear 0.7s ease-in-out 3;
+  transform-origin: 170px 168px;
+}
+
+/* Scroll horizontal sin barra visible (móvil) */
+.sin-barra::-webkit-scrollbar { display: none; }
+.sin-barra { scrollbar-width: none; }
