@@ -69,5 +69,33 @@ export async function GET(request: Request) {
     resultado.excepcion_admin = e instanceof Error ? e.message : String(e);
   }
 
+  // Reproduce la consulta de la pantalla Aprobaciones con la sesión del admin demo
+  try {
+    const cli = createClient(url, anon, { auth: { persistSession: false } });
+    const { data: sesion, error: eLogin } = await cli.auth.signInWithPassword({
+      email: "admin@vitalcowork.ec",
+      password: "demo123456",
+    });
+    if (eLogin) {
+      resultado.login_admin = { error: eLogin.message };
+    } else {
+      resultado.login_admin = { ok: true, uid: sesion.user?.id };
+      const { data: pend, error: ePend } = await cli
+        .from("profiles")
+        .select(
+          "id, nombre_completo, alias, specialties(nombre), accreditations(id, tipo, estado)"
+        )
+        .eq("estado", "pendiente")
+        .eq("rol", "comed");
+      resultado.consulta_aprobaciones = ePend
+        ? { error: ePend.message, code: ePend.code, details: ePend.details, hint: ePend.hint }
+        : { filas: pend?.length, alias: pend?.map((p) => p.alias) };
+      const { data: esMgr, error: eFn } = await cli.rpc("es_comanager");
+      resultado.fn_es_comanager = eFn ? { error: eFn.message } : esMgr;
+    }
+  } catch (e) {
+    resultado.excepcion_aprobaciones = e instanceof Error ? e.message : String(e);
+  }
+
   return NextResponse.json(resultado);
 }
