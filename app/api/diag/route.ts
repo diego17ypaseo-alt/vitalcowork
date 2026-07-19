@@ -16,6 +16,12 @@ export async function GET(request: Request) {
     url,
     anon_prefijo: anon ? anon.slice(0, 15) + "… (largo " + anon.length + ")" : "(FALTA)",
     service_presente: service ? "sí (largo " + service.length + ")" : "(FALTA)",
+    payphone_token: process.env.PAYPHONE_TOKEN
+      ? "presente (largo " + process.env.PAYPHONE_TOKEN.length + ")"
+      : "(FALTA)",
+    payphone_store_id: process.env.PAYPHONE_STORE_ID
+      ? "presente (largo " + process.env.PAYPHONE_STORE_ID.length + ")"
+      : "(FALTA)",
   };
 
   try {
