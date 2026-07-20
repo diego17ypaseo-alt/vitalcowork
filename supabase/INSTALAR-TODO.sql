@@ -1,7 +1,7 @@
 ﻿-- ############ migrations\0001_esquema.sql ############
 
 -- ============================================================
--- VitalCowork â€” Esquema principal
+-- VitalCowork — Esquema principal
 -- Zona horaria de negocio: America/Guayaquil
 -- ============================================================
 
@@ -23,7 +23,7 @@ create type origen_movimiento as enum (
 create type tipo_bloqueo as enum ('feriado', 'manual');
 create type estado_paquete as enum ('pendiente_pago', 'activo', 'agotado', 'expirado');
 
--- ---------- CatÃ¡logos ----------
+-- ---------- Catálogos ----------
 create table specialties (
   id serial primary key,
   nombre text not null unique,
@@ -35,13 +35,13 @@ create table spaces (
   nombre text not null,
   descripcion text,
   es_principal boolean not null default false,
-  -- El satÃ©lite tiene reservable_publico = false: solo aparece cuando el
-  -- co-manager lo habilita (space_availability) o agenda directamente en Ã©l.
+  -- El satélite tiene reservable_publico = false: solo aparece cuando el
+  -- co-manager lo habilita (space_availability) o agenda directamente en él.
   reservable_publico boolean not null default true,
   activo boolean not null default true
 );
 
--- Habilitaciones puntuales del espacio satÃ©lite (modo emergente)
+-- Habilitaciones puntuales del espacio satélite (modo emergente)
 create table space_availability (
   id uuid primary key default gen_random_uuid(),
   space_id uuid not null references spaces(id) on delete cascade,
@@ -55,8 +55,8 @@ create table space_availability (
 
 create table plans (
   id text primary key, -- 'triaje' | 'estancia' | 'vip'
-  nivel text not null, -- BÃ¡sico | Silver | Gold
-  nombre text not null, -- Plan Triaje | Plan Estancia Plus | Plan Ronda MÃ©dica VIP
+  nivel text not null, -- Básico | Silver | Gold
+  nombre text not null, -- Plan Triaje | Plan Estancia Plus | Plan Ronda Médica VIP
   precio_hora numeric(6,2) not null,
   min_horas_semana int, -- null = sin paquete semanal
   min_horas_mes int,
@@ -76,7 +76,7 @@ create table profiles (
   estado estado_perfil not null default 'pendiente',
   nombre_completo text not null,
   cedula text,
-  alias text not null, -- lo Ãºnico visible para otros co-meds
+  alias text not null, -- lo único visible para otros co-meds
   especialidad_id int references specialties(id),
   telefono text,
   email text not null,
@@ -108,7 +108,7 @@ create table packages (
   precio_total numeric(8,2) not null,
   estado estado_paquete not null default 'pendiente_pago',
   inicio date, -- se fija al confirmar el pago
-  fin date,    -- inicio + 30 dÃ­as calendario
+  fin date,    -- inicio + 30 días calendario
   creado_en timestamptz not null default now()
 );
 
@@ -141,7 +141,7 @@ create table reservations (
   package_id uuid references packages(id),
   plan_id text references plans(id),
   precio numeric(6,2) not null default 0,
-  pago_id uuid, -- FK a payments (se agrega luego por orden de creaciÃ³n)
+  pago_id uuid, -- FK a payments (se agrega luego por orden de creación)
   reagendamientos int not null default 0,
   es_hora_extra boolean not null default false, -- generada por excedente Art. 9
   notas text,
@@ -150,8 +150,8 @@ create table reservations (
   actualizado_en timestamptz not null default now()
 );
 
--- âš  PrevenciÃ³n de colisiones: un solo ocupante activo por bloque/espacio.
--- Postgres garantiza esto incluso bajo concurrencia (Ã­ndice Ãºnico parcial).
+-- ⚠ Prevención de colisiones: un solo ocupante activo por bloque/espacio.
+-- Postgres garantiza esto incluso bajo concurrencia (índice único parcial).
 create unique index ux_reserva_bloque on reservations(space_id, fecha, hora)
   where estado in ('pendiente_pago', 'confirmada', 'en_curso');
 
@@ -203,7 +203,7 @@ create table payments (
 alter table reservations
   add constraint fk_reserva_pago foreign key (pago_id) references payments(id);
 
--- ---------- Recompensas por derivaciÃ³n ----------
+-- ---------- Recompensas por derivación ----------
 create table reward_catalog (
   id serial primary key,
   estudio text not null,
@@ -241,14 +241,14 @@ create table holidays_blocks (
   tipo tipo_bloqueo not null,
   motivo text not null,
   space_id uuid references spaces(id), -- null = todo el establecimiento
-  hora_inicio smallint, -- null = todo el dÃ­a
+  hora_inicio smallint, -- null = todo el día
   hora_fin smallint,
   creado_por uuid,
   creado_en timestamptz not null default now()
 );
 create index ix_bloqueos_fecha on holidays_blocks(fecha);
 
--- ---------- ConfiguraciÃ³n editable ----------
+-- ---------- Configuración editable ----------
 create table settings (
   clave text primary key,
   valor jsonb not null,
@@ -257,7 +257,7 @@ create table settings (
   actualizado_en timestamptz not null default now()
 );
 
--- ---------- TÃ©rminos y condiciones ----------
+-- ---------- Términos y condiciones ----------
 create table tnc_versions (
   id serial primary key,
   version text not null unique,
@@ -321,15 +321,15 @@ alter publication supabase_realtime add table space_availability;
 -- ############ migrations\0002_rls.sql ############
 
 -- ============================================================
--- VitalCowork â€” Row Level Security
+-- VitalCowork — Row Level Security
 -- Control de acceso por rol EN EL BACKEND (no solo UI):
---  Â· co-med: solo ve/edita lo suyo; las reservas ajenas solo vÃ­a la
+--  · co-med: solo ve/edita lo suyo; las reservas ajenas solo vía la
 --    vista anonimizada calendario_publico (alias + especialidad).
---  Â· co-manager: acceso completo.
+--  · co-manager: acceso completo.
 -- ============================================================
 
--- Helper: Â¿el usuario autenticado es co-manager?
--- SECURITY DEFINER para evitar recursiÃ³n de RLS sobre profiles.
+-- Helper: ¿el usuario autenticado es co-manager?
+-- SECURITY DEFINER para evitar recursión de RLS sobre profiles.
 create or replace function public.es_comanager() returns boolean
 language sql stable security definer set search_path = public as
 $$ select exists (select 1 from profiles where id = auth.uid() and rol = 'comanager'); $$;
@@ -361,7 +361,7 @@ alter table tnc_acceptances enable row level security;
 alter table notifications enable row level security;
 alter table push_subscriptions enable row level security;
 
--- ---------- CatÃ¡logos: lectura pÃºblica autenticada, escritura co-manager ----------
+-- ---------- Catálogos: lectura pública autenticada, escritura co-manager ----------
 create policy sel_specialties on specialties for select to authenticated using (true);
 create policy adm_specialties on specialties for all to authenticated
   using (es_comanager()) with check (es_comanager());
@@ -419,7 +419,7 @@ end $$;
 create trigger tg_proteger_perfil before update on profiles
   for each row execute function fn_proteger_perfil();
 
--- ---------- Acreditaciones: el dueÃ±o sube y ve; solo co-manager revisa ----------
+-- ---------- Acreditaciones: el dueño sube y ve; solo co-manager revisa ----------
 create policy sel_acred on accreditations for select to authenticated
   using (profile_id = auth.uid() or es_comanager());
 create policy ins_acred on accreditations for insert to authenticated
@@ -427,7 +427,7 @@ create policy ins_acred on accreditations for insert to authenticated
 create policy upd_acred on accreditations for update to authenticated
   using (es_comanager()) with check (es_comanager());
 
--- ---------- Paquetes y monedero: lectura propia; escritura solo vÃ­a funciones ----------
+-- ---------- Paquetes y monedero: lectura propia; escritura solo vía funciones ----------
 create policy sel_paquetes on packages for select to authenticated
   using (profile_id = auth.uid() or es_comanager());
 create policy sel_wallet on wallet_ledger for select to authenticated
@@ -438,7 +438,7 @@ create policy adm_wallet on wallet_ledger for insert to authenticated
 -- ---------- Reservas: el co-med solo ve las suyas (las ajenas van por la vista) ----------
 create policy sel_reservas on reservations for select to authenticated
   using (profile_id = auth.uid() or es_comanager());
--- inserciones/updates SOLO vÃ­a funciones transaccionales (security definer)
+-- inserciones/updates SOLO vía funciones transaccionales (security definer)
 create policy adm_reservas on reservations for all to authenticated
   using (es_comanager()) with check (es_comanager());
 
@@ -510,7 +510,7 @@ select
   r.es_hora_extra,
   (r.profile_id = auth.uid()) as es_mia,
   case when r.profile_id = auth.uid() or es_comanager()
-    then p.alias else p.alias end as alias, -- alias siempre (es el dato pÃºblico)
+    then p.alias else p.alias end as alias, -- alias siempre (es el dato público)
   s.nombre as especialidad,
   case when es_comanager() then r.profile_id else null end as profile_id
 from reservations r
@@ -527,7 +527,7 @@ insert into storage.buckets (id, name, public) values
 on conflict (id) do nothing;
 
 -- Cada usuario sube a su carpeta (primer segmento = su uid); solo el
--- dueÃ±o y el co-manager pueden leer.
+-- dueño y el co-manager pueden leer.
 create policy up_acred on storage.objects for insert to authenticated
   with check (bucket_id = 'acreditaciones' and (storage.foldername(name))[1] = auth.uid()::text);
 create policy rd_acred on storage.objects for select to authenticated
@@ -541,8 +541,8 @@ create policy rd_comp on storage.objects for select to authenticated
 -- ############ migrations\0003_funciones.sql ############
 
 -- ============================================================
--- VitalCowork â€” Funciones transaccionales de negocio
--- Toda la lÃ³gica crÃ­tica vive en el backend (SECURITY DEFINER):
+-- VitalCowork — Funciones transaccionales de negocio
+-- Toda la lógica crítica vive en el backend (SECURITY DEFINER):
 -- la UI solo llama RPCs; las reglas no se pueden burlar desde el cliente.
 -- ============================================================
 
@@ -560,7 +560,7 @@ create or replace function fn_hoy_gye() returns date
 language sql stable as
 $$ select (now() at time zone 'America/Guayaquil')::date; $$;
 
--- Horas de inicio reservables segÃºn la configuraciÃ³n de jornadas
+-- Horas de inicio reservables según la configuración de jornadas
 create or replace function fn_horas_reservables() returns smallint[]
 language plpgsql stable security definer set search_path = public as $$
 declare
@@ -576,11 +576,11 @@ begin
   return v_horas;
 end $$;
 
--- Â¿El bloque es vÃ¡lido para reservar? (dÃ­a hÃ¡bil, jornada, sin feriado/bloqueo,
+-- ¿El bloque es válido para reservar? (día hábil, jornada, sin feriado/bloqueo,
 -- espacio activo y habilitado)
 create or replace function fn_bloque_valido(
   p_fecha date, p_hora smallint, p_space uuid, p_es_manager boolean
-) returns text -- null = vÃ¡lido; texto = motivo de rechazo
+) returns text -- null = válido; texto = motivo de rechazo
 language plpgsql stable security definer set search_path = public as $$
 declare
   v_space spaces;
@@ -589,7 +589,7 @@ begin
     return 'Solo se reserva de lunes a viernes';
   end if;
   if not (p_hora = any (fn_horas_reservables())) then
-    return 'Hora fuera del horario de atenciÃ³n';
+    return 'Hora fuera del horario de atención';
   end if;
   select * into v_space from spaces where id = p_space;
   if v_space is null or not v_space.activo then
@@ -600,7 +600,7 @@ begin
        select 1 from space_availability sa
        where sa.space_id = p_space and p_fecha between sa.fecha_inicio and sa.fecha_fin
      ) then
-    return 'Este espacio solo estÃ¡ habilitado por el administrador';
+    return 'Este espacio solo está habilitado por el administrador';
   end if;
   if exists (
     select 1 from holidays_blocks hb
@@ -633,7 +633,7 @@ language sql stable security definer set search_path = public as
 $$ select id from profiles where rol = 'comanager' limit 1; $$;
 
 -- ============================================================
--- Tabla espejo pÃºblica del calendario (sin datos personales) para
+-- Tabla espejo pública del calendario (sin datos personales) para
 -- Realtime: todos los co-meds la pueden leer; solo muestra alias + especialidad.
 -- ============================================================
 create table calendar_slots (
@@ -666,7 +666,7 @@ begin
   from profiles p left join specialties s on s.id = p.especialidad_id
   where p.id = new.profile_id;
   insert into calendar_slots (reservation_id, space_id, fecha, hora, estado, alias, especialidad, es_hora_extra)
-  values (new.id, new.space_id, new.fecha, new.hora, new.estado, coalesce(v_alias, 'â€”'), v_esp, new.es_hora_extra)
+  values (new.id, new.space_id, new.fecha, new.hora, new.estado, coalesce(v_alias, '—'), v_esp, new.es_hora_extra)
   on conflict (reservation_id) do update set
     space_id = excluded.space_id, fecha = excluded.fecha, hora = excluded.hora,
     estado = excluded.estado, alias = excluded.alias,
@@ -677,7 +677,7 @@ create trigger tg_sync_slot after insert or update or delete on reservations
   for each row execute function fn_sync_slot();
 
 -- ============================================================
--- RESERVAR BLOQUES (multi-selecciÃ³n, transaccional, anti-colisiÃ³n)
+-- RESERVAR BLOQUES (multi-selección, transaccional, anti-colisión)
 -- p_bloques: [{"fecha":"2026-07-20","hora":9}, ...]
 -- ============================================================
 create or replace function fn_reservar_bloques(
@@ -713,16 +713,16 @@ begin
     raise exception 'PERFIL_NO_APROBADO: la cuenta debe estar aprobada por el administrador';
   end if;
 
-  -- Art. 9: suspensiÃ³n automÃ¡tica de la prÃ³xima reserva por reincidencia
+  -- Art. 9: suspensión automática de la próxima reserva por reincidencia
   if v_perfil.suspension_proxima_reserva and not v_manager then
     update profiles set suspension_proxima_reserva = false, reincidencias_excedente = 0
       where id = v_profile;
     perform fn_notificar(v_profile, 'suspension',
       'Reserva suspendida (Art. 9)',
-      'Por exceder repetidamente tu tiempo reservado, esta reserva fue suspendida automÃ¡ticamente segÃºn el Art. 9 del reglamento. Ya puedes volver a reservar.');
+      'Por exceder repetidamente tu tiempo reservado, esta reserva fue suspendida automáticamente según el Art. 9 del reglamento. Ya puedes volver a reservar.');
     perform fn_notificar(fn_comanager_id(), 'suspension',
-      'SuspensiÃ³n aplicada', format('Se aplicÃ³ la suspensiÃ³n automÃ¡tica de reserva a %s.', v_perfil.nombre_completo));
-    raise exception 'SUSPENSION_ART9: por reincidencia en excedentes, esta reserva queda suspendida (Art. 9 del reglamento). Tu prÃ³xima reserva ya estarÃ¡ habilitada.';
+      'Suspensión aplicada', format('Se aplicó la suspensión automática de reserva a %s.', v_perfil.nombre_completo));
+    raise exception 'SUSPENSION_ART9: por reincidencia en excedentes, esta reserva queda suspendida (Art. 9 del reglamento). Tu próxima reserva ya estará habilitada.';
   end if;
 
   -- Paquete activo con saldo suficiente (si se pide usar paquete)
@@ -751,7 +751,7 @@ begin
     v_hora := (v_b ->> 'hora')::smallint;
 
     if fn_bloque_ts(v_fecha, v_hora) <= now() then
-      raise exception 'BLOQUE_PASADO: % %:00 ya pasÃ³', v_fecha, v_hora;
+      raise exception 'BLOQUE_PASADO: % %:00 ya pasó', v_fecha, v_hora;
     end if;
     v_err := fn_bloque_valido(v_fecha, v_hora, p_space, v_manager);
     if v_err is not null then
@@ -761,7 +761,7 @@ begin
     if v_pkg.id is null and v_fecha > v_fin_mes then
       raise exception 'FUERA_DE_MES: con hora individual (Plan Triaje) solo puedes reservar dentro del mes en curso';
     end if;
-    -- Paquete: solo dentro de su vigencia de 30 dÃ­as
+    -- Paquete: solo dentro de su vigencia de 30 días
     if v_pkg.id is not null and v_fecha > v_pkg.fin then
       raise exception 'FUERA_DE_VIGENCIA: tu paquete vence el %', v_pkg.fin;
     end if;
@@ -807,7 +807,7 @@ begin
 end $$;
 
 -- ============================================================
--- REAGENDAR (polÃ­tica flexible por plan; Art. dedicado del brief)
+-- REAGENDAR (política flexible por plan; Art. dedicado del brief)
 -- ============================================================
 create or replace function fn_reagendar(
   p_reserva uuid, p_fecha date, p_hora smallint, p_motivo text default null
@@ -827,7 +827,7 @@ begin
   if v_r.id is null then raise exception 'RESERVA_NO_EXISTE'; end if;
   if v_r.profile_id <> v_actor and not v_manager then raise exception 'SIN_PERMISO'; end if;
   if v_r.estado not in ('confirmada', 'pendiente_pago') then
-    raise exception 'NO_REAGENDABLE: la reserva estÃ¡ en estado %', v_r.estado;
+    raise exception 'NO_REAGENDABLE: la reserva está en estado %', v_r.estado;
   end if;
 
   select * into v_plan from plans where id = v_r.plan_id;
@@ -836,14 +836,14 @@ begin
   end if;
 
   if not v_manager then
-    -- AnticipaciÃ³n mÃ­nima (configurable, inicial 4h)
+    -- Anticipación mínima (configurable, inicial 4h)
     if fn_bloque_ts(v_r.fecha, v_r.hora) - now() < make_interval(hours => v_ant_horas::int) then
-      raise exception 'FUERA_DE_TIEMPO: solo puedes reagendar con al menos % horas de anticipaciÃ³n', v_ant_horas;
+      raise exception 'FUERA_DE_TIEMPO: solo puedes reagendar con al menos % horas de anticipación', v_ant_horas;
     end if;
-    -- LÃ­mite por plan (null = ilimitado, beneficio Estancia Plus / Ronda MÃ©dica VIP)
+    -- Límite por plan (null = ilimitado, beneficio Estancia Plus / Ronda Médica VIP)
     if v_plan.reagendamientos_por_reserva is not null
        and v_r.reagendamientos >= v_plan.reagendamientos_por_reserva then
-      raise exception 'LIMITE_REAGENDA: tu plan permite % reagendamiento(s) por reserva. Mejora a Estancia Plus o Ronda MÃ©dica VIP para reagendar sin lÃ­mite.', v_plan.reagendamientos_por_reserva;
+      raise exception 'LIMITE_REAGENDA: tu plan permite % reagendamiento(s) por reserva. Mejora a Estancia Plus o Ronda Médica VIP para reagendar sin límite.', v_plan.reagendamientos_por_reserva;
     end if;
     -- Ventana de destino
     if v_r.package_id is null then
@@ -858,7 +858,7 @@ begin
   end if;
 
   if fn_bloque_ts(p_fecha, p_hora) <= now() then
-    raise exception 'BLOQUE_PASADO: ese bloque ya pasÃ³';
+    raise exception 'BLOQUE_PASADO: ese bloque ya pasó';
   end if;
   v_err := fn_bloque_valido(p_fecha, p_hora, v_r.space_id, v_manager);
   if v_err is not null then raise exception 'BLOQUE_INVALIDO: %', v_err; end if;
@@ -869,8 +869,8 @@ begin
       reagendamientos = reagendamientos + case when v_actor = v_r.profile_id then 1 else 0 end
     where id = p_reserva;
   exception when unique_violation then
-    -- El sistema jamÃ¡s pisa turnos de otros co-meds: solo bloques libres
-    raise exception 'BLOQUE_OCUPADO: ese bloque ya estÃ¡ reservado, elige otro';
+    -- El sistema jamás pisa turnos de otros co-meds: solo bloques libres
+    raise exception 'BLOQUE_OCUPADO: ese bloque ya está reservado, elige otro';
   end;
 
   insert into reservation_events (reservation_id, tipo, actor, datos)
@@ -879,11 +879,11 @@ begin
 
   if v_actor = v_r.profile_id then
     perform fn_notificar(fn_comanager_id(), 'reagendada', 'Reserva reagendada',
-      format('Una reserva del %s %s:00 se moviÃ³ al %s %s:00.', v_r.fecha, v_r.hora, p_fecha, p_hora),
+      format('Una reserva del %s %s:00 se movió al %s %s:00.', v_r.fecha, v_r.hora, p_fecha, p_hora),
       jsonb_build_object('reserva', p_reserva));
   else
     perform fn_notificar(v_r.profile_id, 'reagendada', 'Tu reserva fue reagendada',
-      format('El administrador moviÃ³ tu reserva del %s %s:00 al %s %s:00.%s',
+      format('El administrador movió tu reserva del %s %s:00 al %s %s:00.%s',
         v_r.fecha, v_r.hora, p_fecha, p_hora,
         coalesce(' Motivo: ' || p_motivo, '')),
       jsonb_build_object('reserva', p_reserva));
@@ -893,7 +893,7 @@ begin
 end $$;
 
 -- ============================================================
--- CANCELAR (Art. 4: â‰¥24h sin costo; <24h 50%; no-show 100%)
+-- CANCELAR (Art. 4: ≥24h sin costo; <24h 50%; no-show 100%)
 -- ============================================================
 create or replace function fn_cancelar(
   p_reserva uuid, p_motivo text default null, p_penalizar boolean default true
@@ -913,13 +913,13 @@ begin
   if v_r.id is null then raise exception 'RESERVA_NO_EXISTE'; end if;
   if v_r.profile_id <> v_actor and not v_manager then raise exception 'SIN_PERMISO'; end if;
   if v_r.estado not in ('confirmada', 'pendiente_pago') then
-    raise exception 'NO_CANCELABLE: la reserva estÃ¡ en estado %', v_r.estado;
+    raise exception 'NO_CANCELABLE: la reserva está en estado %', v_r.estado;
   end if;
 
   v_pagada := v_r.estado = 'confirmada';
 
   if v_manager and v_r.profile_id <> v_actor then
-    -- CancelaciÃ³n del establecimiento: por defecto sin penalizaciÃ³n (reembolso total)
+    -- Cancelación del establecimiento: por defecto sin penalización (reembolso total)
     v_pct := case when p_penalizar then coalesce((fn_config('penalizacion_dentro_24h'))::text::numeric, 0.5) else 0 end;
   elsif fn_bloque_ts(v_r.fecha, v_r.hora) - now() >= interval '24 hours' then
     v_pct := 0;
@@ -940,7 +940,7 @@ begin
     if v_devolucion > 0 then
       insert into wallet_ledger (profile_id, package_id, delta_horas, origen, reservation_id, descripcion, vence_en, creado_por)
       values (v_r.profile_id, v_r.package_id, v_devolucion, 'reembolso_cancelacion', p_reserva,
-        format('DevoluciÃ³n por cancelaciÃ³n (%s%% penalizaciÃ³n)', (v_pct * 100)::int), v_vence, v_actor);
+        format('Devolución por cancelación (%s%% penalización)', (v_pct * 100)::int), v_vence, v_actor);
       if v_r.package_id is not null then
         update packages set estado = 'activo' where id = v_r.package_id and estado = 'agotado' and fin >= fn_hoy_gye();
       end if;
@@ -959,19 +959,19 @@ begin
   perform fn_notificar(v_r.profile_id, 'cancelada',
     'Reserva cancelada',
     format('Tu reserva del %s a las %s:00 fue cancelada.%s', v_r.fecha, v_r.hora,
-      case when v_pct > 0 then format(' Se aplicÃ³ una penalizaciÃ³n del %s%% (Art. 4 del reglamento).', (v_pct*100)::int)
-           when v_pagada then ' Se devolviÃ³ el 100%% a tu monedero de horas.' else '' end),
+      case when v_pct > 0 then format(' Se aplicó una penalización del %s%% (Art. 4 del reglamento).', (v_pct*100)::int)
+           when v_pagada then ' Se devolvió el 100%% a tu monedero de horas.' else '' end),
     jsonb_build_object('reserva', p_reserva));
   if v_actor = v_r.profile_id then
-    perform fn_notificar(fn_comanager_id(), 'cancelada', 'CancelaciÃ³n de reserva',
-      format('Se cancelÃ³ una reserva del %s %s:00.', v_r.fecha, v_r.hora));
+    perform fn_notificar(fn_comanager_id(), 'cancelada', 'Cancelación de reserva',
+      format('Se canceló una reserva del %s %s:00.', v_r.fecha, v_r.hora));
   end if;
 
   return jsonb_build_object('ok', true, 'penalizacion_pct', v_pct, 'devolucion_horas', v_devolucion);
 end $$;
 
 -- ============================================================
--- NO-SHOW (Art. 4: penalizaciÃ³n del 100%)
+-- NO-SHOW (Art. 4: penalización del 100%)
 -- ============================================================
 create or replace function fn_marcar_no_show(p_reserva uuid) returns jsonb
 language plpgsql security definer set search_path = public as $$
@@ -981,11 +981,11 @@ begin
   select * into v_r from reservations where id = p_reserva for update;
   if v_r.estado <> 'confirmada' then raise exception 'ESTADO_INVALIDO'; end if;
   update reservations set estado = 'no_show' where id = p_reserva;
-  -- 100% de penalizaciÃ³n: no se devuelve nada (la hora ya se descontÃ³/pagÃ³)
+  -- 100% de penalización: no se devuelve nada (la hora ya se descontó/pagó)
   insert into reservation_events (reservation_id, tipo, actor, datos)
   values (p_reserva, 'no_show', auth.uid(), jsonb_build_object('penalizacion_pct', 1));
   perform fn_notificar(v_r.profile_id, 'no_show', 'Inasistencia registrada',
-    format('No se registrÃ³ tu asistencia a la reserva del %s a las %s:00. SegÃºn el Art. 4 del reglamento se penaliza con el 100%% del valor de la hora.', v_r.fecha, v_r.hora));
+    format('No se registró tu asistencia a la reserva del %s a las %s:00. Según el Art. 4 del reglamento se penaliza con el 100%% del valor de la hora.', v_r.fecha, v_r.hora));
   return jsonb_build_object('ok', true);
 end $$;
 
@@ -1007,7 +1007,7 @@ begin
     raise exception 'MUY_TEMPRANO: el check-in se habilita 15 minutos antes de tu hora';
   end if;
   if now() > fn_bloque_ts(v_r.fecha, v_r.hora) + interval '1 hour' then
-    raise exception 'MUY_TARDE: el bloque ya terminÃ³';
+    raise exception 'MUY_TARDE: el bloque ya terminó';
   end if;
   insert into sessions (reservation_id, checkin_por, checkin_dispositivo)
   values (p_reserva, v_actor, p_dispositivo);
@@ -1048,7 +1048,7 @@ begin
   end if;
 
   -- Art. 9: superados los minutos de gracia se cobra una hora adicional,
-  -- Ãºnicamente si la siguiente franja estÃ¡ libre.
+  -- únicamente si la siguiente franja está libre.
   if v_exceso_min > v_gracia then
     select profile_id into v_otro from reservations
     where space_id = v_r.space_id and fecha = v_r.fecha and hora = v_r.hora + 1
@@ -1060,16 +1060,16 @@ begin
     if v_sig_ocupada then
       -- Alerta urgente a ambos co-meds y al co-manager
       perform fn_notificar(v_r.profile_id, 'alerta_excedente',
-        'âš  Excediste tu hora y la siguiente franja estÃ¡ reservada',
+        '⚠ Excediste tu hora y la siguiente franja está reservada',
         'Debes desocupar el consultorio de inmediato: otro profesional tiene reservada la siguiente hora.');
       perform fn_notificar(v_otro, 'alerta_excedente',
-        'âš  Posible demora en tu consultorio',
-        'El profesional anterior excediÃ³ su hora. El administrador ya fue alertado.');
+        '⚠ Posible demora en tu consultorio',
+        'El profesional anterior excedió su hora. El administrador ya fue alertado.');
       perform fn_notificar(fn_comanager_id(), 'alerta_excedente',
-        'âš  Conflicto de excedente',
-        format('Un co-med excediÃ³ su bloque de %s:00 y la franja siguiente estÃ¡ reservada. Considera habilitar el consultorio satÃ©lite.', v_r.hora));
+        '⚠ Conflicto de excedente',
+        format('Un co-med excedió su bloque de %s:00 y la franja siguiente está reservada. Considera habilitar el consultorio satélite.', v_r.hora));
     else
-      -- Cobro automÃ¡tico de una hora adicional
+      -- Cobro automático de una hora adicional
       select precio_hora into v_precio from plans where id = coalesce(v_r.plan_id, 'triaje');
       insert into reservations (profile_id, space_id, fecha, hora, estado, origen,
         package_id, plan_id, precio, es_hora_extra, creado_por)
@@ -1095,12 +1095,12 @@ begin
         jsonb_build_object('exceso_min', v_exceso_min, 'cobro', v_cobro, 'reserva_extra', v_extra_id));
       perform fn_notificar(v_r.profile_id, 'hora_extra',
         'Hora adicional cobrada (Art. 9)',
-        format('Excediste tu hora reservada por %s minutos (mÃ¡s de %s de gracia). Se cobrÃ³ una hora adicional (%s).',
+        format('Excediste tu hora reservada por %s minutos (más de %s de gracia). Se cobró una hora adicional (%s).',
           v_exceso_min, v_gracia,
           case v_cobro when 'descontado_del_monedero' then 'descontada de tu paquete/monedero' else 'pago pendiente en ventanilla' end));
     end if;
 
-    -- Reincidencia â†’ suspensiÃ³n automÃ¡tica de la prÃ³xima reserva
+    -- Reincidencia → suspensión automática de la próxima reserva
     update profiles set reincidencias_excedente = reincidencias_excedente + 1
       where id = v_r.profile_id
       returning reincidencias_excedente into v_reinc;
@@ -1109,8 +1109,8 @@ begin
       insert into reservation_events (reservation_id, tipo, actor, datos)
       values (p_reserva, 'suspension', v_actor, jsonb_build_object('reincidencias', v_reinc));
       perform fn_notificar(v_r.profile_id, 'suspension',
-        'Aviso de suspensiÃ³n (Art. 9)',
-        'Por reincidencia en excedentes de tiempo, tu prÃ³xima reserva serÃ¡ suspendida automÃ¡ticamente segÃºn el Art. 9 del reglamento.');
+        'Aviso de suspensión (Art. 9)',
+        'Por reincidencia en excedentes de tiempo, tu próxima reserva será suspendida automáticamente según el Art. 9 del reglamento.');
     end if;
   end if;
 
@@ -1140,15 +1140,23 @@ declare
   v_actor uuid := auth.uid();
   v_manager boolean := es_comanager();
   v_total numeric;
+  v_perfiles int;
   v_profile uuid;
   v_pago uuid;
 begin
-  select sum(precio), min(profile_id) into v_total, v_profile
+  select sum(precio), count(distinct profile_id) into v_total, v_perfiles
   from reservations where id = any(p_reservas) and estado = 'pendiente_pago' and pago_id is null;
   if v_total is null then raise exception 'SIN_RESERVAS_PENDIENTES'; end if;
+  if v_perfiles <> 1 then
+    raise exception 'RESERVAS_MIXTAS: todas las reservas del pago deben ser del mismo profesional';
+  end if;
+  select profile_id into v_profile
+  from reservations
+  where id = any(p_reservas) and estado = 'pendiente_pago' and pago_id is null
+  limit 1;
   if v_profile <> v_actor and not v_manager then raise exception 'SIN_PERMISO'; end if;
   if p_metodo = 'efectivo' and not v_manager then
-    raise exception 'EFECTIVO_SOLO_VENTANILLA: el pago en efectivo lo registra recepciÃ³n';
+    raise exception 'EFECTIVO_SOLO_VENTANILLA: el pago en efectivo lo registra recepción';
   end if;
 
   insert into payments (profile_id, monto, metodo, estado)
@@ -1158,7 +1166,7 @@ begin
   return jsonb_build_object('pago', v_pago, 'monto', v_total);
 end $$;
 
--- Compra de paquete (Estancia Plus / Ronda MÃ©dica VIP)
+-- Compra de paquete (Estancia Plus / Ronda Médica VIP)
 create or replace function fn_comprar_paquete(
   p_plan text, p_horas numeric, p_metodo metodo_pago, p_para uuid default null
 ) returns jsonb language plpgsql security definer set search_path = public as $$
@@ -1179,7 +1187,7 @@ begin
     raise exception 'PLAN_INVALIDO: este plan no ofrece paquetes';
   end if;
   if p_horas < v_plan.min_horas_semana then
-    raise exception 'HORAS_INSUFICIENTES: % requiere mÃ­nimo % horas', v_plan.nombre, v_plan.min_horas_semana;
+    raise exception 'HORAS_INSUFICIENTES: % requiere mínimo % horas', v_plan.nombre, v_plan.min_horas_semana;
   end if;
   if p_metodo = 'efectivo' and not v_manager then
     raise exception 'EFECTIVO_SOLO_VENTANILLA';
@@ -1221,13 +1229,13 @@ begin
       select profile_id, id, horas_total, 'compra_paquete',
         format('Paquete %s (%s horas)', plan_id, horas_total), fin, auth.uid()
       from packages where id = v_p.package_id;
-      perform fn_notificar(v_p.profile_id, 'paquete_activo', 'Â¡Paquete activado!',
-        format('Tu paquete ya estÃ¡ activo. Tienes %s dÃ­as para usar tus horas (no acumulables).', v_vigencia));
+      perform fn_notificar(v_p.profile_id, 'paquete_activo', '¡Paquete activado!',
+        format('Tu paquete ya está activo. Tienes %s días para usar tus horas (no acumulables).', v_vigencia));
     end if;
 
     update reservations set estado = 'confirmada' where pago_id = p_pago and estado = 'pendiente_pago';
     perform fn_notificar(v_p.profile_id, 'pago_confirmado', 'Pago confirmado',
-      format('Tu pago de $%s fue confirmado. Recibo NÂ° %s disponible en la app.', v_p.monto, v_p.numero_recibo));
+      format('Tu pago de $%s fue confirmado. Recibo N° %s disponible en la app.', v_p.monto, v_p.numero_recibo));
   else
     update payments set estado = 'rechazado', confirmado_por = auth.uid(), confirmado_en = now()
     where id = p_pago;
@@ -1241,7 +1249,7 @@ begin
 end $$;
 
 -- ============================================================
--- RECOMPENSAS POR DERIVACIÃ“N (doble confirmaciÃ³n)
+-- RECOMPENSAS POR DERIVACIÓN (doble confirmación)
 -- ============================================================
 create or replace function fn_acreditar_recompensa(
   p_referral uuid, p_aprobar boolean, p_nota text default null
@@ -1264,21 +1272,21 @@ begin
     where id = p_referral;
     insert into wallet_ledger (profile_id, delta_horas, origen, referral_id, descripcion, vence_en, creado_por)
     values (v_ref.profile_id, v_horas, 'recompensa', p_referral,
-      format('Recompensa por derivaciÃ³n: %s', v_estudio), fn_hoy_gye() + v_dias, auth.uid());
-    perform fn_notificar(v_ref.profile_id, 'recompensa', 'ðŸŽ‰ Horas acreditadas',
-      format('Se acreditaron %s hora(s) gratis a tu monedero por tu derivaciÃ³n de %s. Vigencia: %s dÃ­as.', v_horas, v_estudio, v_dias));
+      format('Recompensa por derivación: %s', v_estudio), fn_hoy_gye() + v_dias, auth.uid());
+    perform fn_notificar(v_ref.profile_id, 'recompensa', '🎉 Horas acreditadas',
+      format('Se acreditaron %s hora(s) gratis a tu monedero por tu derivación de %s. Vigencia: %s días.', v_horas, v_estudio, v_dias));
   else
     update referrals set estado = 'rechazada', acreditada_por = auth.uid(),
       acreditada_en = now(), nota = coalesce(p_nota, nota)
     where id = p_referral;
-    perform fn_notificar(v_ref.profile_id, 'recompensa', 'DerivaciÃ³n no acreditada',
-      coalesce(p_nota, 'Tu derivaciÃ³n no pudo ser confirmada. Consulta en recepciÃ³n.'));
+    perform fn_notificar(v_ref.profile_id, 'recompensa', 'Derivación no acreditada',
+      coalesce(p_nota, 'Tu derivación no pudo ser confirmada. Consulta en recepción.'));
   end if;
   return jsonb_build_object('ok', true);
 end $$;
 
 -- ============================================================
--- APROBACIÃ“N DE CO-MEDS
+-- APROBACIÓN DE CO-MEDS
 -- ============================================================
 create or replace function fn_aprobar_comed(
   p_profile uuid, p_aprobar boolean, p_comentario text default null
@@ -1292,11 +1300,11 @@ begin
     revisado_por = auth.uid(), revisado_en = now(), comentario = coalesce(p_comentario, comentario)
   where profile_id = p_profile and estado = 'pendiente';
   if p_aprobar then
-    perform fn_notificar(p_profile, 'aprobacion', 'âœ… Cuenta aprobada',
-      'Tu acreditaciÃ³n fue verificada. Ya puedes reservar tu espacio en VitalCowork.');
+    perform fn_notificar(p_profile, 'aprobacion', '✅ Cuenta aprobada',
+      'Tu acreditación fue verificada. Ya puedes reservar tu espacio en VitalCowork.');
   else
-    perform fn_notificar(p_profile, 'aprobacion', 'AcreditaciÃ³n observada',
-      coalesce(p_comentario, 'Tu acreditaciÃ³n necesita correcciones. Revisa tu perfil.'));
+    perform fn_notificar(p_profile, 'aprobacion', 'Acreditación observada',
+      coalesce(p_comentario, 'Tu acreditación necesita correcciones. Revisa tu perfil.'));
   end if;
   return jsonb_build_object('ok', true);
 end $$;
@@ -1321,15 +1329,15 @@ begin
     if v_saldo > 0 then
       insert into wallet_ledger (profile_id, package_id, delta_horas, origen, descripcion)
       values (v_pkg.profile_id, v_pkg.id, -v_saldo, 'expiracion',
-        format('ExpiraciÃ³n de paquete: %s hora(s) no usadas', v_saldo));
+        format('Expiración de paquete: %s hora(s) no usadas', v_saldo));
       perform fn_notificar(v_pkg.profile_id, 'expiracion', 'Paquete vencido',
-        format('Tu paquete venciÃ³ el %s. %s hora(s) sin usar expiraron (los paquetes no son acumulables).', v_pkg.fin, v_saldo));
+        format('Tu paquete venció el %s. %s hora(s) sin usar expiraron (los paquetes no son acumulables).', v_pkg.fin, v_saldo));
     end if;
     update packages set estado = 'expirado' where id = v_pkg.id;
     v_n := v_n + 1;
   end loop;
 
-  -- Horas de recompensa vencidas (monedero general, aproximaciÃ³n FIFO)
+  -- Horas de recompensa vencidas (monedero general, aproximación FIFO)
   for v_perfil in
     select profile_id,
       sum(delta_horas) filter (where package_id is null) as saldo_general,
@@ -1342,7 +1350,7 @@ begin
     if v_expirable > 0 then
       insert into wallet_ledger (profile_id, delta_horas, origen, descripcion)
       values (v_perfil.profile_id, -v_expirable, 'expiracion',
-        format('ExpiraciÃ³n de horas de recompensa/crÃ©dito (%s h)', v_expirable));
+        format('Expiración de horas de recompensa/crédito (%s h)', v_expirable));
       perform fn_notificar(v_perfil.profile_id, 'expiracion', 'Horas vencidas',
         format('%s hora(s) de tu monedero vencieron por vigencia.', v_expirable));
     end if;
@@ -1354,7 +1362,7 @@ begin
   where r.pago_id = p.id and r.estado = 'pendiente_pago' and p.estado = 'pendiente'
     and p.metodo = 'payphone'
     and p.creado_en < now() - make_interval(mins => coalesce((fn_config('retencion_payphone_minutos'))::text::int, 30));
-  -- Reservas pendientes sin ningÃºn pago iniciado
+  -- Reservas pendientes sin ningún pago iniciado
   update reservations set estado = 'cancelada'
   where estado = 'pendiente_pago' and pago_id is null
     and creado_en < now() - interval '60 minutes';
@@ -1362,7 +1370,7 @@ begin
   return jsonb_build_object('paquetes_procesados', v_n);
 end $$;
 
--- Resumen del monedero para el tensiÃ³metro
+-- Resumen del monedero para el tensiómetro
 create or replace function fn_resumen_monedero(p_profile uuid default null)
 returns jsonb language plpgsql stable security definer set search_path = public as $$
 declare
@@ -1393,8 +1401,8 @@ end $$;
 
 -- ############ migrations\0004_proteccion_pagos.sql ############
 
--- Defensa en profundidad: un co-med puede cambiar el mÃ©todo de pago o adjuntar
--- su comprobante, pero JAMÃS alterar monto, estado o a quÃ© corresponde el pago.
+-- Defensa en profundidad: un co-med puede cambiar el método de pago o adjuntar
+-- su comprobante, pero JAMÁS alterar monto, estado o a qué corresponde el pago.
 create or replace function fn_proteger_pago() returns trigger
 language plpgsql security definer set search_path = public as $$
 begin
@@ -1415,158 +1423,358 @@ create trigger tg_proteger_pago before update on payments
   for each row execute function fn_proteger_pago();
 
 
+-- ############ migrations\0005_correccion_fn_crear_pago.sql ############
+
+-- Corrección: min(uuid) no existe en Postgres. Se reescribe fn_crear_pago
+-- tomando el perfil con LIMIT 1 y validando que todas las reservas sean
+-- del mismo co-med.
+
+create or replace function fn_crear_pago(
+  p_reservas uuid[], p_metodo metodo_pago
+) returns jsonb language plpgsql security definer set search_path = public as $$
+declare
+  v_actor uuid := auth.uid();
+  v_manager boolean := es_comanager();
+  v_total numeric;
+  v_perfiles int;
+  v_profile uuid;
+  v_pago uuid;
+begin
+  select sum(precio), count(distinct profile_id)
+    into v_total, v_perfiles
+  from reservations
+  where id = any(p_reservas) and estado = 'pendiente_pago' and pago_id is null;
+
+  if v_total is null then raise exception 'SIN_RESERVAS_PENDIENTES'; end if;
+  if v_perfiles <> 1 then
+    raise exception 'RESERVAS_MIXTAS: todas las reservas del pago deben ser del mismo profesional';
+  end if;
+
+  select profile_id into v_profile
+  from reservations
+  where id = any(p_reservas) and estado = 'pendiente_pago' and pago_id is null
+  limit 1;
+
+  if v_profile <> v_actor and not v_manager then raise exception 'SIN_PERMISO'; end if;
+  if p_metodo = 'efectivo' and not v_manager then
+    raise exception 'EFECTIVO_SOLO_VENTANILLA: el pago en efectivo lo registra recepción';
+  end if;
+
+  insert into payments (profile_id, monto, metodo, estado)
+  values (v_profile, v_total, p_metodo, 'pendiente') returning id into v_pago;
+  update reservations set pago_id = v_pago where id = any(p_reservas);
+
+  return jsonb_build_object('pago', v_pago, 'monto', v_total);
+end $$;
+
+
+-- ############ migrations\0006_reparar_textos_y_especialidades.sql ############
+
+-- ============================================================
+-- Reparación de textos (tildes dañadas por codificación) y
+-- ampliación del catálogo de especialidades.
+-- Seguro de ejecutar varias veces (idempotente).
+-- ============================================================
+
+-- ---------- Planes ----------
+update plans set
+  nivel = 'Básico',
+  nombre = 'Plan Triaje',
+  copy_comercial = 'El dinamismo del primer contacto: acceso rápido, eficiente y de evaluación. Reserva tu hora para hoy, esta semana o el mes en curso.'
+where id = 'triaje';
+
+update plans set
+  nivel = 'Silver',
+  nombre = 'Plan Estancia Plus',
+  badge = 'Más popular',
+  copy_comercial = 'Comodidad y permanencia: un espacio bien equipado y confortable, perfecto para jornadas medianas o de mediano plazo. Incluye reagendamientos ilimitados.'
+where id = 'estancia';
+
+update plans set
+  nivel = 'Gold',
+  nombre = 'Plan Ronda Médica VIP',
+  badge = 'Máximo ahorro',
+  copy_comercial = 'Máxima jerarquía, autoridad y exclusividad: prioridad, acceso total a las mejores instalaciones y mayores beneficios — como el especialista líder durante su pase de visita. Incluye reagendamientos ilimitados y asistente para agendamiento, reagendamiento y confirmación de citas de tus pacientes.'
+where id = 'vip';
+
+-- ---------- Especialidades: corrige las existentes (por id del seed) ----------
+update specialties set nombre = 'Medicina General' where id = 1;
+update specialties set nombre = 'Medicina Interna' where id = 2;
+update specialties set nombre = 'Cardiología' where id = 3;
+update specialties set nombre = 'Psicología' where id = 4;
+update specialties set nombre = 'Nutrición' where id = 5;
+update specialties set nombre = 'Endocrinología' where id = 6;
+update specialties set nombre = 'Geriatría' where id = 7;
+update specialties set nombre = 'Dermatología clínica' where id = 8;
+update specialties set nombre = 'Pediatría' where id = 9;
+update specialties set nombre = 'Ginecología (consulta)' where id = 10;
+update specialties set nombre = 'Neumología' where id = 11;
+update specialties set nombre = 'Reumatología' where id = 12;
+update specialties set nombre = 'Psiquiatría' where id = 13;
+update specialties set nombre = 'Fisioterapia' where id = 14;
+
+-- ---------- Especialidades nuevas (clínicas y quirúrgicas de consulta) ----------
+insert into specialties (nombre) values
+  ('Urología'),
+  ('Neurología'),
+  ('Traumatología'),
+  ('Nefrología'),
+  ('Hematología'),
+  ('Gastroenterología'),
+  ('Medicina Familiar'),
+  ('Oftalmología'),
+  ('Otras')
+on conflict (nombre) do nothing;
+
+-- ---------- Espacios ----------
+update spaces set
+  nombre = 'Consultorio principal',
+  descripcion = 'Consultorio grande, completamente amoblado para consulta ambulatoria.'
+where es_principal;
+update spaces set
+  nombre = 'Consultorio satélite',
+  descripcion = 'Consultorio pequeño de apoyo (ECG y ecocardiogramas). Se habilita en alta demanda.'
+where not es_principal;
+
+-- ---------- Recompensas ----------
+update reward_catalog set estudio = 'MAPA (presión arterial 24h)' where estudio like 'MAPA%';
+update reward_catalog set estudio = 'Electrocardiograma' where estudio like 'Electro%';
+update reward_catalog set estudio = 'Ecocardiograma' where estudio like 'Ecocardio%';
+update reward_catalog set estudio = 'Prueba de esfuerzo' where estudio like 'Prueba%';
+update reward_catalog set estudio = 'Holter de ritmo' where estudio like 'Holter%';
+update reward_catalog set estudio = 'Asesoramiento nutricional con especialista' where estudio like 'Asesoramiento%';
+
+-- ---------- Feriados ----------
+update holidays_blocks set motivo = 'Año Nuevo' where fecha in ('2026-01-01','2027-01-01') and tipo = 'feriado';
+update holidays_blocks set motivo = 'Carnaval' where fecha in ('2026-02-16','2026-02-17','2027-02-08','2027-02-09') and tipo = 'feriado';
+update holidays_blocks set motivo = 'Viernes Santo' where fecha in ('2026-04-03','2027-03-26') and tipo = 'feriado';
+update holidays_blocks set motivo = 'Día del Trabajo' where fecha = '2026-05-01' and tipo = 'feriado';
+update holidays_blocks set motivo = 'Día del Trabajo (trasladado del sáb. 1 de mayo)' where fecha = '2027-04-30' and tipo = 'feriado';
+update holidays_blocks set motivo = 'Batalla de Pichincha (trasladado del dom. 24)' where fecha = '2026-05-25' and tipo = 'feriado';
+update holidays_blocks set motivo = 'Batalla de Pichincha' where fecha = '2027-05-24' and tipo = 'feriado';
+update holidays_blocks set motivo = 'Primer Grito de Independencia' where fecha = '2026-08-10' and tipo = 'feriado';
+update holidays_blocks set motivo = 'Primer Grito de Independencia (trasladado del mar. 10)' where fecha = '2027-08-09' and tipo = 'feriado';
+update holidays_blocks set motivo = 'Independencia de Guayaquil' where fecha = '2026-10-09' and tipo = 'feriado';
+update holidays_blocks set motivo = 'Independencia de Guayaquil (trasladado del sáb. 9)' where fecha = '2027-10-08' and tipo = 'feriado';
+update holidays_blocks set motivo = 'Día de los Difuntos' where fecha = '2026-11-02' and tipo = 'feriado';
+update holidays_blocks set motivo = 'Día de los Difuntos (trasladado del mar. 2)' where fecha = '2027-11-01' and tipo = 'feriado';
+update holidays_blocks set motivo = 'Independencia de Cuenca' where fecha = '2026-11-03' and tipo = 'feriado';
+update holidays_blocks set motivo = 'Independencia de Cuenca (trasladado del mié. 3)' where fecha = '2027-11-05' and tipo = 'feriado';
+update holidays_blocks set motivo = 'Navidad' where fecha = '2026-12-25' and tipo = 'feriado';
+
+-- ---------- Perfil demo del co-manager ----------
+update profiles set alias = 'Dirección' where rol = 'comanager' and alias like 'Direc%';
+
+-- ---------- Reglamento (T&C) íntegro con texto correcto ----------
+update tnc_versions set contenido_md = $tnc$
+# Términos y Condiciones de Uso — VitalCowork
+
+Al registrarte en VitalCowork declaras y aceptas:
+
+1. **Acreditación profesional.** Eres un profesional de la salud legalmente habilitado en Ecuador (registro Senescyt/ACESS o equivalente) y la documentación que cargas es auténtica. Tu cuenta se activa solo tras la verificación del administrador.
+2. **Alcance del servicio.** VitalCowork alquila espacios para **consulta médica ambulatoria**. Están excluidos los procedimientos quirúrgicos mayores o complejos; solo se permiten procedimientos menores (p. ej., extracción de puntos, limpieza quirúrgica menor).
+3. **Responsabilidad profesional.** Cada co-med es el único y exclusivo responsable de la atención, diagnóstico y tratamiento de sus pacientes. VitalCowork provee la infraestructura física y no participa en la relación médico–paciente.
+4. **Protección de datos.** Tus datos personales se tratan conforme a la Ley Orgánica de Protección de Datos Personales (LOPDP) del Ecuador, con fines de gestión de reservas, pagos y seguridad. En el registro se solicita nombre y número de cédula para fines de seguridad y confidencialidad. Tus datos personales nunca se muestran a otros co-meds: en el calendario solo aparece tu alias y tu especialidad.
+
+---
+
+# REGLAMENTO INTERNO DEL COWORKING MÉDICO — VITALCOWORK
+*Fecha de emisión: 16 de julio de 2026*
+
+## CAPÍTULO I: DISPOSICIONES GENERALES
+
+**Art. 1. Objeto**: establecer las normas y procedimientos que rigen el funcionamiento de VitalCowork, promoviendo un ambiente profesional, ético y colaborativo para todos los profesionales de la salud que integran la comunidad.
+
+**Art. 2. Ámbito de aplicación**: cumplimiento obligatorio para todos los médicos, profesionales de la salud, personal administrativo y visitantes que utilicen las instalaciones.
+
+## CAPÍTULO II: USO DE LAS INSTALACIONES
+
+**Art. 3. Horarios de atención**: instalaciones disponibles de lunes a viernes, de 09:00 a 12:00 y de 13:00 a 18:00, salvo excepciones autorizadas.
+
+**Art. 4. Reservaciones**: las áreas y consultorios se reservan mediante el sistema establecido. Cancelaciones con al menos 24 horas de anticipación no tienen costo; cancelar dentro de las 24 horas se penaliza con el 50% del valor de esa hora; no notificar cancelación se penaliza con el total de la hora reservada.
+
+**Art. 5. Mantenimiento y limpieza**: el consultorio se entrega limpio y con lencería limpia (batas o mediasábanas). Cada co-med es responsable de mantener en orden su espacio y cumplir las disposiciones de higiene y bioseguridad vigentes, desechando la basura según sea material común o infeccioso.
+
+## CAPÍTULO III: CONDUCTA Y ÉTICA
+
+**Art. 6. Comportamiento profesional**: conducta respetuosa, ética y profesional con colegas, pacientes y visitantes.
+
+**Art. 7. Confidencialidad**: obligación de garantizar la confidencialidad de la información de los pacientes y cumplir las normativas de protección de datos; prohibido tomar fotos o videos del lugar o de pacientes sin consentimiento.
+
+**Art. 8. Uso de equipos y materiales**: uso responsable y conforme a las instrucciones de uso y seguridad; los daños acarrean sanciones o correcciones.
+
+## CAPÍTULO IV: RESPONSABILIDADES Y SANCIONES
+
+**Art. 9. Tiempo reservado**: el co-med debe respetar el horario reservado; al excederlo dispone de 8 minutos de gracia, tras lo cual se cobra una hora adicional (abonada o descontada de su paquete), siempre que la siguiente franja no esté reservada por otro médico. El incumplimiento puede acarrear la suspensión automática de una próxima reserva.
+
+**Art. 10. Responsabilidades del usuario**: cada co-med responde por el cumplimiento de este reglamento y el correcto uso de instalaciones y recursos.
+
+**Art. 11. Sanciones**: el incumplimiento podrá resultar en sanciones desde advertencias hasta suspensión o cancelación del acceso, según la gravedad.
+
+## CAPÍTULO V: DISPOSICIONES FINALES
+
+**Art. 12. Modificación**: el reglamento puede ser modificado por la dirección de VitalCowork, comunicándose oportunamente a los usuarios. La app notificará y pedirá re-aceptación cuando cambie la versión.
+
+**Art. 13. Aceptación**: el ingreso y permanencia en las instalaciones implica la aceptación total de estas disposiciones.
+$tnc$
+where version = '1.0';
+
+
 -- ############ seed.sql ############
 
 -- ============================================================
--- VitalCowork â€” Datos semilla
+-- VitalCowork — Datos semilla
 -- Cuentas demo (solo entorno local/desarrollo):
 --   Co-manager: admin@vitalcowork.ec   / demo123456
 --   Co-meds:    dra.paredes@demo.ec, dr.molina@demo.ec, lic.andrade@demo.ec / demo123456
 -- ============================================================
 
--- ---------- Especialidades permitidas (sin cirugÃ­a mayor) ----------
+-- ---------- Especialidades permitidas (sin cirugía mayor) ----------
 insert into specialties (nombre) values
-  ('Medicina General'), ('Medicina Interna'), ('CardiologÃ­a'),
-  ('PsicologÃ­a'), ('NutriciÃ³n'), ('EndocrinologÃ­a'), ('GeriatrÃ­a'),
-  ('DermatologÃ­a clÃ­nica'), ('PediatrÃ­a'), ('GinecologÃ­a (consulta)'),
-  ('NeumologÃ­a'), ('ReumatologÃ­a'), ('PsiquiatrÃ­a'), ('Fisioterapia');
+  ('Medicina General'), ('Medicina Interna'), ('Cardiología'),
+  ('Psicología'), ('Nutrición'), ('Endocrinología'), ('Geriatría'),
+  ('Dermatología clínica'), ('Pediatría'), ('Ginecología (consulta)'),
+  ('Neumología'), ('Reumatología'), ('Psiquiatría'), ('Fisioterapia'),
+  ('Urología'), ('Neurología'), ('Traumatología'), ('Nefrología'),
+  ('Hematología'), ('Gastroenterología'), ('Medicina Familiar'),
+  ('Oftalmología'), ('Otras');
 
 -- ---------- Espacios ----------
 insert into spaces (id, nombre, descripcion, es_principal, reservable_publico) values
   ('11111111-1111-1111-1111-111111111111', 'Consultorio principal',
    'Consultorio grande, completamente amoblado para consulta ambulatoria.', true, true),
-  ('22222222-2222-2222-2222-222222222222', 'Consultorio satÃ©lite',
-   'Consultorio pequeÃ±o de apoyo (ECG y ecocardiogramas). Se habilita en alta demanda.', false, false);
+  ('22222222-2222-2222-2222-222222222222', 'Consultorio satélite',
+   'Consultorio pequeño de apoyo (ECG y ecocardiogramas). Se habilita en alta demanda.', false, false);
 
 -- ---------- Planes (valores iniciales, editables por el co-manager) ----------
 insert into plans (id, nivel, nombre, precio_hora, min_horas_semana, min_horas_mes,
   reagendamientos_por_reserva, color, badge, copy_comercial, orden) values
-  ('triaje', 'BÃ¡sico', 'Plan Triaje', 15.00, null, null, 1, '#0e7490', null,
-   'El dinamismo del primer contacto: acceso rÃ¡pido, eficiente y de evaluaciÃ³n. Reserva tu hora para hoy, esta semana o el mes en curso.', 1),
-  ('estancia', 'Silver', 'Plan Estancia Plus', 12.00, 5, 15, null, '#64748b', 'MÃ¡s popular',
+  ('triaje', 'Básico', 'Plan Triaje', 15.00, null, null, 1, '#0e7490', null,
+   'El dinamismo del primer contacto: acceso rápido, eficiente y de evaluación. Reserva tu hora para hoy, esta semana o el mes en curso.', 1),
+  ('estancia', 'Silver', 'Plan Estancia Plus', 12.00, 5, 15, null, '#64748b', 'Más popular',
    'Comodidad y permanencia: un espacio bien equipado y confortable, perfecto para jornadas medianas o de mediano plazo. Incluye reagendamientos ilimitados.', 2),
-  ('vip', 'Gold', 'Plan Ronda MÃ©dica VIP', 10.00, 10, 30, null, '#b45309', 'MÃ¡ximo ahorro',
-   'MÃ¡xima jerarquÃ­a, autoridad y exclusividad: prioridad, acceso total a las mejores instalaciones y mayores beneficios â€” como el especialista lÃ­der durante su pase de visita. Reagendamientos ilimitados.', 3);
+  ('vip', 'Gold', 'Plan Ronda Médica VIP', 10.00, 10, 30, null, '#b45309', 'Máximo ahorro',
+   'Máxima jerarquía, autoridad y exclusividad: prioridad, acceso total a las mejores instalaciones y mayores beneficios — como el especialista líder durante su pase de visita. Incluye reagendamientos ilimitados y asistente para agendamiento, reagendamiento y confirmación de citas de tus pacientes.', 3);
 
--- ---------- ConfiguraciÃ³n (todo editable desde el panel) ----------
+-- ---------- Configuración (todo editable desde el panel) ----------
 insert into settings (clave, valor, descripcion) values
-  ('horario', '{"jornadas": [[9,12],[13,18]]}', 'Jornadas de atenciÃ³n (hora inicio/fin). El hueco entre jornadas es el receso de almuerzo.'),
+  ('horario', '{"jornadas": [[9,12],[13,18]]}', 'Jornadas de atención (hora inicio/fin). El hueco entre jornadas es el receso de almuerzo.'),
   ('gracia_minutos', '8', 'Minutos de gracia al exceder la hora reservada (Art. 9)'),
-  ('umbral_reincidencias', '3', 'Excedentes acumulados que activan la suspensiÃ³n automÃ¡tica de la prÃ³xima reserva'),
-  ('reagenda_anticipacion_horas', '4', 'AnticipaciÃ³n mÃ­nima (horas) para poder reagendar una reserva'),
-  ('penalizacion_dentro_24h', '0.5', 'FracciÃ³n penalizada al cancelar dentro de las 24h (Art. 4)'),
-  ('penalizacion_no_show', '1', 'FracciÃ³n penalizada por no presentarse sin aviso (Art. 4)'),
-  ('vigencia_paquete_dias', '30', 'DÃ­as calendario de vigencia de los paquetes'),
-  ('vigencia_recompensas_dias', '90', 'DÃ­as de vigencia de las horas de recompensa por derivaciÃ³n'),
-  ('vigencia_credito_dias', '30', 'DÃ­as de vigencia de crÃ©ditos por cancelaciÃ³n de hora individual'),
+  ('umbral_reincidencias', '3', 'Excedentes acumulados que activan la suspensión automática de la próxima reserva'),
+  ('reagenda_anticipacion_horas', '4', 'Anticipación mínima (horas) para poder reagendar una reserva'),
+  ('penalizacion_dentro_24h', '0.5', 'Fracción penalizada al cancelar dentro de las 24h (Art. 4)'),
+  ('penalizacion_no_show', '1', 'Fracción penalizada por no presentarse sin aviso (Art. 4)'),
+  ('vigencia_paquete_dias', '30', 'Días calendario de vigencia de los paquetes'),
+  ('vigencia_recompensas_dias', '90', 'Días de vigencia de las horas de recompensa por derivación'),
+  ('vigencia_credito_dias', '30', 'Días de vigencia de créditos por cancelación de hora individual'),
   ('retencion_payphone_minutos', '30', 'Minutos que se retiene un bloque con pago Payphone sin completar'),
   ('recordatorio_transferencia_horas', '12', 'Horas sin confirmar una transferencia antes de recordar al co-manager'),
-  ('whatsapp_numero', '"593983936496"', 'NÃºmero de WhatsApp del establecimiento (formato internacional, sin +)'),
+  ('whatsapp_numero', '"593983936496"', 'Número de WhatsApp del establecimiento (formato internacional, sin +)'),
   ('bancos', '[
     {"banco": "Banco Guayaquil", "tipo": "Ahorros", "numero": "0000000000", "titular": "VitalCowork", "cedula_ruc": "0900000000"},
     {"banco": "Banco Pichincha", "tipo": "Ahorros", "numero": "0000000000", "titular": "VitalCowork", "cedula_ruc": "0900000000"},
     {"banco": "Produbanco", "tipo": "Ahorros", "numero": "0000000000", "titular": "VitalCowork", "cedula_ruc": "0900000000"},
-    {"banco": "Banco del PacÃ­fico", "tipo": "Ahorros", "numero": "0000000000", "titular": "VitalCowork", "cedula_ruc": "0900000000"}
+    {"banco": "Banco del Pacífico", "tipo": "Ahorros", "numero": "0000000000", "titular": "VitalCowork", "cedula_ruc": "0900000000"}
   ]', 'Cuentas bancarias para transferencias (editar con datos reales)');
 
--- ---------- CatÃ¡logo de recompensas por derivaciÃ³n ----------
+-- ---------- Catálogo de recompensas por derivación ----------
 insert into reward_catalog (estudio, horas, orden) values
   ('Electrocardiograma', 1, 1),
   ('Ecocardiograma', 2, 2),
   ('Prueba de esfuerzo', 3, 3),
   ('Holter de ritmo', 2, 4),
-  ('MAPA (presiÃ³n arterial 24h)', 2, 5),
+  ('MAPA (presión arterial 24h)', 2, 5),
   ('Asesoramiento nutricional con especialista', 2, 6);
 
--- ---------- Feriados nacionales de Ecuador (con traslados segÃºn ley) ----------
+-- ---------- Feriados nacionales de Ecuador (con traslados según ley) ----------
 insert into holidays_blocks (fecha, tipo, motivo) values
   -- 2026
-  ('2026-01-01', 'feriado', 'AÃ±o Nuevo'),
+  ('2026-01-01', 'feriado', 'Año Nuevo'),
   ('2026-02-16', 'feriado', 'Carnaval'),
   ('2026-02-17', 'feriado', 'Carnaval'),
   ('2026-04-03', 'feriado', 'Viernes Santo'),
-  ('2026-05-01', 'feriado', 'DÃ­a del Trabajo'),
+  ('2026-05-01', 'feriado', 'Día del Trabajo'),
   ('2026-05-25', 'feriado', 'Batalla de Pichincha (trasladado del dom. 24)'),
   ('2026-08-10', 'feriado', 'Primer Grito de Independencia'),
   ('2026-10-09', 'feriado', 'Independencia de Guayaquil'),
-  ('2026-11-02', 'feriado', 'DÃ­a de los Difuntos'),
+  ('2026-11-02', 'feriado', 'Día de los Difuntos'),
   ('2026-11-03', 'feriado', 'Independencia de Cuenca'),
   ('2026-12-25', 'feriado', 'Navidad'),
   -- 2027
-  ('2027-01-01', 'feriado', 'AÃ±o Nuevo'),
+  ('2027-01-01', 'feriado', 'Año Nuevo'),
   ('2027-02-08', 'feriado', 'Carnaval'),
   ('2027-02-09', 'feriado', 'Carnaval'),
   ('2027-03-26', 'feriado', 'Viernes Santo'),
-  ('2027-04-30', 'feriado', 'DÃ­a del Trabajo (trasladado del sÃ¡b. 1 de mayo)'),
+  ('2027-04-30', 'feriado', 'Día del Trabajo (trasladado del sáb. 1 de mayo)'),
   ('2027-05-24', 'feriado', 'Batalla de Pichincha'),
   ('2027-08-09', 'feriado', 'Primer Grito de Independencia (trasladado del mar. 10)'),
-  ('2027-10-08', 'feriado', 'Independencia de Guayaquil (trasladado del sÃ¡b. 9)'),
-  ('2027-11-01', 'feriado', 'DÃ­a de los Difuntos (trasladado del mar. 2)'),
-  ('2027-11-05', 'feriado', 'Independencia de Cuenca (trasladado del miÃ©. 3)');
+  ('2027-10-08', 'feriado', 'Independencia de Guayaquil (trasladado del sáb. 9)'),
+  ('2027-11-01', 'feriado', 'Día de los Difuntos (trasladado del mar. 2)'),
+  ('2027-11-05', 'feriado', 'Independencia de Cuenca (trasladado del mié. 3)');
 
--- ---------- TÃ©rminos y condiciones v1.0 (Reglamento Ã­ntegro) ----------
+-- ---------- Términos y condiciones v1.0 (Reglamento íntegro) ----------
 insert into tnc_versions (version, contenido_md, publicado) values ('1.0', $tnc$
-# TÃ©rminos y Condiciones de Uso â€” VitalCowork
+# Términos y Condiciones de Uso — VitalCowork
 
 Al registrarte en VitalCowork declaras y aceptas:
 
-1. **AcreditaciÃ³n profesional.** Eres un profesional de la salud legalmente habilitado en Ecuador (registro ACESS/Senescyt o equivalente) y la documentaciÃ³n que cargas es autÃ©ntica. Tu cuenta se activa solo tras la verificaciÃ³n del administrador.
-2. **Alcance del servicio.** VitalCowork alquila espacios para **consulta mÃ©dica ambulatoria**. EstÃ¡n excluidos los procedimientos quirÃºrgicos mayores o complejos; solo se permiten procedimientos menores (p. ej., extracciÃ³n de puntos, limpieza quirÃºrgica menor).
-3. **Responsabilidad profesional.** Cada co-med es el Ãºnico y exclusivo responsable de la atenciÃ³n, diagnÃ³stico y tratamiento de sus pacientes. VitalCowork provee la infraestructura fÃ­sica y no participa en la relaciÃ³n mÃ©dicoâ€“paciente.
-4. **ProtecciÃ³n de datos.** Tus datos personales se tratan conforme a la Ley OrgÃ¡nica de ProtecciÃ³n de Datos Personales (LOPDP) del Ecuador, con fines de gestiÃ³n de reservas, pagos y seguridad. En el registro se solicita nombre y nÃºmero de cÃ©dula para fines de seguridad y confidencialidad. Tus datos personales nunca se muestran a otros co-meds: en el calendario solo aparece tu alias y tu especialidad.
+1. **Acreditación profesional.** Eres un profesional de la salud legalmente habilitado en Ecuador (registro ACESS/Senescyt o equivalente) y la documentación que cargas es auténtica. Tu cuenta se activa solo tras la verificación del administrador.
+2. **Alcance del servicio.** VitalCowork alquila espacios para **consulta médica ambulatoria**. Están excluidos los procedimientos quirúrgicos mayores o complejos; solo se permiten procedimientos menores (p. ej., extracción de puntos, limpieza quirúrgica menor).
+3. **Responsabilidad profesional.** Cada co-med es el único y exclusivo responsable de la atención, diagnóstico y tratamiento de sus pacientes. VitalCowork provee la infraestructura física y no participa en la relación médico–paciente.
+4. **Protección de datos.** Tus datos personales se tratan conforme a la Ley Orgánica de Protección de Datos Personales (LOPDP) del Ecuador, con fines de gestión de reservas, pagos y seguridad. En el registro se solicita nombre y número de cédula para fines de seguridad y confidencialidad. Tus datos personales nunca se muestran a otros co-meds: en el calendario solo aparece tu alias y tu especialidad.
 
 ---
 
-# REGLAMENTO INTERNO DEL COWORKING MÃ‰DICO â€” VITALCOWORK
-*Fecha de emisiÃ³n: 16 de julio de 2026*
+# REGLAMENTO INTERNO DEL COWORKING MÉDICO — VITALCOWORK
+*Fecha de emisión: 16 de julio de 2026*
 
-## CAPÃTULO I: DISPOSICIONES GENERALES
+## CAPÍTULO I: DISPOSICIONES GENERALES
 
-**Art. 1. Objeto**: establecer las normas y procedimientos que rigen el funcionamiento de VitalCowork, promoviendo un ambiente profesional, Ã©tico y colaborativo para todos los profesionales de la salud que integran la comunidad.
+**Art. 1. Objeto**: establecer las normas y procedimientos que rigen el funcionamiento de VitalCowork, promoviendo un ambiente profesional, ético y colaborativo para todos los profesionales de la salud que integran la comunidad.
 
-**Art. 2. Ãmbito de aplicaciÃ³n**: cumplimiento obligatorio para todos los mÃ©dicos, profesionales de la salud, personal administrativo y visitantes que utilicen las instalaciones.
+**Art. 2. Ámbito de aplicación**: cumplimiento obligatorio para todos los médicos, profesionales de la salud, personal administrativo y visitantes que utilicen las instalaciones.
 
-## CAPÃTULO II: USO DE LAS INSTALACIONES
+## CAPÍTULO II: USO DE LAS INSTALACIONES
 
-**Art. 3. Horarios de atenciÃ³n**: instalaciones disponibles de lunes a viernes, de 09:00 a 12:00 y de 13:00 a 18:00, salvo excepciones autorizadas.
+**Art. 3. Horarios de atención**: instalaciones disponibles de lunes a viernes, de 09:00 a 12:00 y de 13:00 a 18:00, salvo excepciones autorizadas.
 
-**Art. 4. Reservaciones**: las Ã¡reas y consultorios se reservan mediante el sistema establecido. Cancelaciones con al menos 24 horas de anticipaciÃ³n no tienen costo; cancelar dentro de las 24 horas se penaliza con el 50% del valor de esa hora; no notificar cancelaciÃ³n se penaliza con el total de la hora reservada.
+**Art. 4. Reservaciones**: las áreas y consultorios se reservan mediante el sistema establecido. Cancelaciones con al menos 24 horas de anticipación no tienen costo; cancelar dentro de las 24 horas se penaliza con el 50% del valor de esa hora; no notificar cancelación se penaliza con el total de la hora reservada.
 
-**Art. 5. Mantenimiento y limpieza**: el consultorio se entrega limpio y con lencerÃ­a limpia (batas o mediasÃ¡banas). Cada co-med es responsable de mantener en orden su espacio y cumplir las disposiciones de higiene y bioseguridad vigentes, desechando la basura segÃºn sea material comÃºn o infeccioso.
+**Art. 5. Mantenimiento y limpieza**: el consultorio se entrega limpio y con lencería limpia (batas o mediasábanas). Cada co-med es responsable de mantener en orden su espacio y cumplir las disposiciones de higiene y bioseguridad vigentes, desechando la basura según sea material común o infeccioso.
 
-## CAPÃTULO III: CONDUCTA Y Ã‰TICA
+## CAPÍTULO III: CONDUCTA Y ÉTICA
 
-**Art. 6. Comportamiento profesional**: conducta respetuosa, Ã©tica y profesional con colegas, pacientes y visitantes.
+**Art. 6. Comportamiento profesional**: conducta respetuosa, ética y profesional con colegas, pacientes y visitantes.
 
-**Art. 7. Confidencialidad**: obligaciÃ³n de garantizar la confidencialidad de la informaciÃ³n de los pacientes y cumplir las normativas de protecciÃ³n de datos; prohibido tomar fotos o videos del lugar o de pacientes sin consentimiento.
+**Art. 7. Confidencialidad**: obligación de garantizar la confidencialidad de la información de los pacientes y cumplir las normativas de protección de datos; prohibido tomar fotos o videos del lugar o de pacientes sin consentimiento.
 
-**Art. 8. Uso de equipos y materiales**: uso responsable y conforme a las instrucciones de uso y seguridad; los daÃ±os acarrean sanciones o correcciones.
+**Art. 8. Uso de equipos y materiales**: uso responsable y conforme a las instrucciones de uso y seguridad; los daños acarrean sanciones o correcciones.
 
-## CAPÃTULO IV: RESPONSABILIDADES Y SANCIONES
+## CAPÍTULO IV: RESPONSABILIDADES Y SANCIONES
 
-**Art. 9. Tiempo reservado**: el co-med debe respetar el horario reservado; al excederlo dispone de 8 minutos de gracia, tras lo cual se cobra una hora adicional (abonada o descontada de su paquete), siempre que la siguiente franja no estÃ© reservada por otro mÃ©dico. El incumplimiento puede acarrear la suspensiÃ³n automÃ¡tica de una prÃ³xima reserva.
+**Art. 9. Tiempo reservado**: el co-med debe respetar el horario reservado; al excederlo dispone de 8 minutos de gracia, tras lo cual se cobra una hora adicional (abonada o descontada de su paquete), siempre que la siguiente franja no esté reservada por otro médico. El incumplimiento puede acarrear la suspensión automática de una próxima reserva.
 
 **Art. 10. Responsabilidades del usuario**: cada co-med responde por el cumplimiento de este reglamento y el correcto uso de instalaciones y recursos.
 
-**Art. 11. Sanciones**: el incumplimiento podrÃ¡ resultar en sanciones desde advertencias hasta suspensiÃ³n o cancelaciÃ³n del acceso, segÃºn la gravedad.
+**Art. 11. Sanciones**: el incumplimiento podrá resultar en sanciones desde advertencias hasta suspensión o cancelación del acceso, según la gravedad.
 
-## CAPÃTULO V: DISPOSICIONES FINALES
+## CAPÍTULO V: DISPOSICIONES FINALES
 
-**Art. 12. ModificaciÃ³n**: el reglamento puede ser modificado por la direcciÃ³n de VitalCowork, comunicÃ¡ndose oportunamente a los usuarios. La app notificarÃ¡ y pedirÃ¡ re-aceptaciÃ³n cuando cambie la versiÃ³n.
+**Art. 12. Modificación**: el reglamento puede ser modificado por la dirección de VitalCowork, comunicándose oportunamente a los usuarios. La app notificará y pedirá re-aceptación cuando cambie la versión.
 
-**Art. 13. AceptaciÃ³n**: el ingreso y permanencia en las instalaciones implica la aceptaciÃ³n total de estas disposiciones.
+**Art. 13. Aceptación**: el ingreso y permanencia en las instalaciones implica la aceptación total de estas disposiciones.
 $tnc$, true);
 
 -- ============================================================
--- Cuentas demo (SOLO desarrollo local â€” no ejecutar en producciÃ³n)
+-- Cuentas demo (SOLO desarrollo local — no ejecutar en producción)
 -- ============================================================
 do $$
 declare
   v_ids uuid[] := array[
     'a0000000-0000-0000-0000-000000000001', -- co-manager
-    'a0000000-0000-0000-0000-000000000002', -- Dra. Paredes (NutriciÃ³n)
+    'a0000000-0000-0000-0000-000000000002', -- Dra. Paredes (Nutrición)
     'a0000000-0000-0000-0000-000000000003', -- Dr. Molina (Medicina Interna)
-    'a0000000-0000-0000-0000-000000000004'  -- Lic. Andrade (PsicologÃ­a)
+    'a0000000-0000-0000-0000-000000000004'  -- Lic. Andrade (Psicología)
   ]::uuid[];
   v_emails text[] := array['admin@vitalcowork.ec', 'dra.paredes@demo.ec', 'dr.molina@demo.ec', 'lic.andrade@demo.ec'];
   i int;
@@ -1591,16 +1799,16 @@ end $$;
 
 insert into profiles (id, rol, estado, nombre_completo, cedula, alias, especialidad_id, telefono, email) values
   ('a0000000-0000-0000-0000-000000000001', 'comanager', 'aprobado', 'Dr. Propietario VitalCowork',
-   '0900000001', 'DirecciÃ³n', (select id from specialties where nombre = 'CardiologÃ­a'),
+   '0900000001', 'Dirección', (select id from specialties where nombre = 'Cardiología'),
    '0983936496', 'admin@vitalcowork.ec'),
   ('a0000000-0000-0000-0000-000000000002', 'comed', 'aprobado', 'Dra. Josefina Paredes',
-   '0900000002', 'J.P.', (select id from specialties where nombre = 'NutriciÃ³n'),
+   '0900000002', 'J.P.', (select id from specialties where nombre = 'Nutrición'),
    '0990000002', 'dra.paredes@demo.ec'),
   ('a0000000-0000-0000-0000-000000000003', 'comed', 'aprobado', 'Dr. Marco Molina',
    '0900000003', 'M.M.', (select id from specialties where nombre = 'Medicina Interna'),
    '0990000003', 'dr.molina@demo.ec'),
   ('a0000000-0000-0000-0000-000000000004', 'comed', 'pendiente', 'Lic. Carla Andrade',
-   '0900000004', 'C.A.', (select id from specialties where nombre = 'PsicologÃ­a'),
+   '0900000004', 'C.A.', (select id from specialties where nombre = 'Psicología'),
    '0990000004', 'lic.andrade@demo.ec');
 
 insert into accreditations (profile_id, tipo, numero, estado) values
@@ -1626,19 +1834,19 @@ insert into wallet_ledger (profile_id, package_id, delta_horas, origen, descripc
   ('a0000000-0000-0000-0000-000000000002', 'b0000000-0000-0000-0000-000000000001',
    15, 'compra_paquete', 'Paquete Estancia Plus (15 horas)', current_date + 25);
 
--- Recompensa acreditada de ejemplo (Dr. Molina derivÃ³ un ecocardiograma)
+-- Recompensa acreditada de ejemplo (Dr. Molina derivó un ecocardiograma)
 insert into referrals (id, profile_id, reward_id, paciente_iniciales, estado, acreditada_por, acreditada_en) values
   ('c0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000003',
    (select id from reward_catalog where estudio = 'Ecocardiograma'), 'N.N.',
    'acreditada', 'a0000000-0000-0000-0000-000000000001', now() - interval '2 days');
 insert into wallet_ledger (profile_id, delta_horas, origen, referral_id, descripcion, vence_en) values
   ('a0000000-0000-0000-0000-000000000003', 2, 'recompensa', 'c0000000-0000-0000-0000-000000000001',
-   'Recompensa por derivaciÃ³n: Ecocardiograma', current_date + 90);
+   'Recompensa por derivación: Ecocardiograma', current_date + 90);
 
--- ---------- Reservas de ejemplo (prÃ³xima semana laboral) ----------
+-- ---------- Reservas de ejemplo (próxima semana laboral) ----------
 do $$
 declare
-  v_lunes date := (date_trunc('week', current_date))::date + 7; -- lunes prÃ³ximo
+  v_lunes date := (date_trunc('week', current_date))::date + 7; -- lunes próximo
   v_principal uuid := '11111111-1111-1111-1111-111111111111';
   v_paredes uuid := 'a0000000-0000-0000-0000-000000000002';
   v_molina uuid := 'a0000000-0000-0000-0000-000000000003';
@@ -1663,4 +1871,3 @@ begin
   values (v_molina, v_principal, v_lunes + 1, 15, 'confirmada', 'ventanilla', 'triaje', 15.00,
     'a0000000-0000-0000-0000-000000000001');
 end $$;
-

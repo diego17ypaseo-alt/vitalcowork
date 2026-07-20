@@ -10,7 +10,10 @@ insert into specialties (nombre) values
   ('Medicina General'), ('Medicina Interna'), ('Cardiología'),
   ('Psicología'), ('Nutrición'), ('Endocrinología'), ('Geriatría'),
   ('Dermatología clínica'), ('Pediatría'), ('Ginecología (consulta)'),
-  ('Neumología'), ('Reumatología'), ('Psiquiatría'), ('Fisioterapia');
+  ('Neumología'), ('Reumatología'), ('Psiquiatría'), ('Fisioterapia'),
+  ('Urología'), ('Neurología'), ('Traumatología'), ('Nefrología'),
+  ('Hematología'), ('Gastroenterología'), ('Medicina Familiar'),
+  ('Oftalmología'), ('Otras');
 
 -- ---------- Espacios ----------
 insert into spaces (id, nombre, descripcion, es_principal, reservable_publico) values
@@ -27,7 +30,7 @@ insert into plans (id, nivel, nombre, precio_hora, min_horas_semana, min_horas_m
   ('estancia', 'Silver', 'Plan Estancia Plus', 12.00, 5, 15, null, '#64748b', 'Más popular',
    'Comodidad y permanencia: un espacio bien equipado y confortable, perfecto para jornadas medianas o de mediano plazo. Incluye reagendamientos ilimitados.', 2),
   ('vip', 'Gold', 'Plan Ronda Médica VIP', 10.00, 10, 30, null, '#b45309', 'Máximo ahorro',
-   'Máxima jerarquía, autoridad y exclusividad: prioridad, acceso total a las mejores instalaciones y mayores beneficios — como el especialista líder durante su pase de visita. Reagendamientos ilimitados.', 3);
+   'Máxima jerarquía, autoridad y exclusividad: prioridad, acceso total a las mejores instalaciones y mayores beneficios — como el especialista líder durante su pase de visita. Incluye reagendamientos ilimitados y asistente para agendamiento, reagendamiento y confirmación de citas de tus pacientes.', 3);
 
 -- ---------- Configuración (todo editable desde el panel) ----------
 insert into settings (clave, valor, descripcion) values

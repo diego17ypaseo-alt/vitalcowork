@@ -146,7 +146,15 @@ export function PlanesComercial({ planes }: { planes: Plan[] }) {
               />
               <Fila etiqueta="Vigencia del paquete" valores={planes.map((p) => p.min_horas_semana ? "30 días" : "—")} />
               <Fila etiqueta="Consultorio amoblado y lencería" valores={planes.map(() => "✅")} />
+              <Fila etiqueta="Papelería: recetarios y órdenes de exámenes" valores={planes.map(() => "✅")} />
+              <Fila etiqueta="WiFi e impresiones" valores={planes.map(() => "✅")} />
+              <Fila etiqueta="Insumos: alcohol antiséptico, torundas, bajalenguas" valores={planes.map(() => "✅")} />
               <Fila etiqueta="Recompensas por derivación" valores={planes.map(() => "✅")} />
+              <Fila
+                etiqueta="Asistente: agendamiento, reagendamiento y confirmación de citas"
+                valores={["—", "—", "⭐"]}
+                destacar
+              />
               <Fila etiqueta="Prioridad y acceso total" valores={["—", "—", "⭐"]} />
             </tbody>
           </table>

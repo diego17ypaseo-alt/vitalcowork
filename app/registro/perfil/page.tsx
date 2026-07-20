@@ -23,7 +23,7 @@ export default function PaginaPerfil() {
     alias: "",
     especialidad: "",
     telefono: "",
-    tipoAcreditacion: "ACESS",
+    tipoAcreditacion: "Senescyt",
     numeroAcreditacion: "",
   });
   const [documento, setDocumento] = useState<File | null>(null);
@@ -154,20 +154,38 @@ export default function PaginaPerfil() {
             <label className="etiqueta">Registro</label>
             <select className="campo" value={f.tipoAcreditacion}
               onChange={(e) => setF({ ...f, tipoAcreditacion: e.target.value })}>
-              <option>ACESS</option>
               <option>Senescyt</option>
+              <option>ACESS</option>
               <option>Otro</option>
             </select>
           </div>
           <div>
-            <label className="etiqueta">N° de registro profesional *</label>
+            <label className="etiqueta">N° de registro Senescyt *</label>
             <input required className="campo" value={f.numeroAcreditacion}
               onChange={(e) => setF({ ...f, numeroAcreditacion: e.target.value })}
-              placeholder="ACESS-0000-2024" />
+              placeholder="1015-2018-2001234" />
           </div>
         </div>
+
+        {/* Descarga rápida del certificado oficial */}
+        <div className="rounded-xl border border-primario/20 bg-primario-suave/50 p-3.5">
+          <p className="text-[12.5px] leading-relaxed">
+            💡 <b>¿No tienes tu certificado a la mano?</b> Descárgalo del
+            Senescyt en 1 minuto: entra con tu cédula, busca tu título y
+            guárdalo en PDF. Luego súbelo aquí abajo.
+          </p>
+          <a
+            href="https://www.senescyt.gob.ec/web/guest/consultas"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-primario mt-2.5 w-full !py-2.5 text-sm"
+          >
+            🎓 Descargar mi certificado del Senescyt
+          </a>
+        </div>
+
         <div>
-          <label className="etiqueta">Documento de acreditación (PDF o foto) *</label>
+          <label className="etiqueta">Certificado / título en PDF o foto *</label>
           <input type="file" accept=".pdf,image/*" className="campo file:mr-3 file:rounded-lg file:border-0 file:bg-primario-suave file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primario-oscuro"
             onChange={(e) => setDocumento(e.target.files?.[0] ?? null)} />
         </div>
