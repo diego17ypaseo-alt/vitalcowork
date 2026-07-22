@@ -55,6 +55,9 @@ export default function PaginaTerminosOnboarding() {
       user_agent: navigator.userAgent,
     });
     if (!error || error.code === "23505") {
+      // Registro completo: avisa automáticamente al administrador
+      // (notificación interna + push + correo)
+      fetch("/api/aviso-registro", { method: "POST" }).catch(() => {});
       router.push("/pendiente");
       router.refresh();
     } else {

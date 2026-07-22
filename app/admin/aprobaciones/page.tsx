@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { crearClienteNavegador } from "@/lib/supabase/client";
 import { Alerta, Cargando, Vacio } from "@/components/ui";
+import { enlaceWhatsAppANumero } from "@/lib/whatsapp";
 
 interface Pendiente {
   id: string;
@@ -24,6 +25,10 @@ export default function PaginaAprobaciones() {
   const [pendientes, setPendientes] = useState<Pendiente[] | null>(null);
   const [comentario, setComentario] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
+  const [recienAprobado, setRecienAprobado] = useState<{
+    nombre: string;
+    whatsapp: string | null;
+  } | null>(null);
 
   const cargar = useCallback(async () => {
     const { data } = await supabase
@@ -55,6 +60,21 @@ export default function PaginaAprobaciones() {
       p_comentario: comentario[id] || null,
     });
     if (e) return setError(e.message);
+    if (aprobar) {
+      const p = pendientes?.find((x) => x.id === id);
+      if (p) {
+        setRecienAprobado({
+          nombre: p.nombre_completo,
+          whatsapp: p.telefono
+            ? enlaceWhatsAppANumero(p.telefono, {
+                tipo: "cuenta_aprobada",
+                nombre: p.nombre_completo,
+                url: window.location.origin,
+              })
+            : null,
+        });
+      }
+    }
     cargar();
   };
 
@@ -64,6 +84,32 @@ export default function PaginaAprobaciones() {
     <main className="space-y-4">
       <h1 className="text-xl font-extrabold">Aprobaciones pendientes</h1>
       {error && <Alerta tono="peligro">{error}</Alerta>}
+      {recienAprobado && (
+        <div className="tarjeta border-exito/40 bg-exito-suave/50 p-4">
+          <p className="text-sm font-bold">
+            ✅ Cuenta de {recienAprobado.nombre} aprobada.
+          </p>
+          <p className="mt-1 text-xs text-tinta-suave">
+            Ya recibió la notificación en la app. Avísale también por WhatsApp
+            con un toque (mensaje ya escrito):
+          </p>
+          <div className="mt-2.5 flex gap-2">
+            {recienAprobado.whatsapp && (
+              <a
+                href={recienAprobado.whatsapp}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-primario flex-1 !bg-[#25D366] !py-2 text-xs"
+              >
+                📲 Avisarle por WhatsApp
+              </a>
+            )}
+            <button onClick={() => setRecienAprobado(null)} className="btn-fantasma !py-2 text-xs">
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
       {pendientes.length === 0 ? (
         <Vacio icono="🎉" texto="No hay co-meds esperando aprobación." />
       ) : (

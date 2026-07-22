@@ -2,8 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { LogoVital } from "@/components/ui";
-import { WhatsAppFab } from "@/components/WhatsAppFab";
 import { CerrarSesion } from "@/components/CerrarSesion";
+import { enlaceWhatsApp } from "@/lib/whatsapp";
 
 export default async function PaginaPendiente() {
   const supabase = await crearClienteServidor();
@@ -14,7 +14,7 @@ export default async function PaginaPendiente() {
 
   const { data: perfil } = await supabase
     .from("profiles")
-    .select("estado, nombre_completo")
+    .select("estado, nombre_completo, cedula")
     .eq("id", user.id)
     .maybeSingle();
   if (!perfil) redirect("/registro/perfil");
@@ -32,20 +32,29 @@ export default async function PaginaPendiente() {
       </div>
       <h1 className="mt-5 text-xl font-bold">Tu cuenta está en revisión</h1>
       <p className="mt-3 text-sm leading-relaxed text-tinta-suave">
-        Hola, <b>{perfil.nombre_completo}</b>. El administrador está verificando
-        tu acreditación profesional. Te avisaremos por correo y notificación
-        cuando tu cuenta sea aprobada — normalmente en menos de 24 horas.
-      </p>
-      <p className="mt-4 text-xs text-tinta-suave">
-        ¿Tienes prisa? Escríbenos por WhatsApp y agilizamos la revisión.
+        Hola, <b>{perfil.nombre_completo}</b>. El administrador ya fue
+        notificado de tu solicitud y está verificando tu acreditación
+        profesional. Te avisaremos cuando tu cuenta sea aprobada — normalmente
+        en menos de 24 horas.
       </p>
       <div className="mt-8 w-full space-y-2">
+        <a
+          href={enlaceWhatsApp(numeroWhatsApp, {
+            tipo: "registro_enviado",
+            nombre: perfil.nombre_completo,
+            cedula: perfil.cedula ?? undefined,
+          })}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn-primario w-full !bg-[#25D366] py-3"
+        >
+          📲 Avisar por WhatsApp para agilizar mi aprobación
+        </a>
         <Link href="/pendiente" className="btn-secundario w-full">
-          Volver a comprobar
+          Volver a comprobar si ya fui aprobado
         </Link>
         <CerrarSesion className="btn-fantasma w-full" />
       </div>
-      <WhatsAppFab numero={numeroWhatsApp} contexto={{ tipo: "ayuda" }} />
     </main>
   );
 }

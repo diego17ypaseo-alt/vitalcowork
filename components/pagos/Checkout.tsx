@@ -43,11 +43,24 @@ export function Checkout({
   const [metodo, setMetodo] = useState<"payphone" | "transferencia" | null>(null);
   const [comprobante, setComprobante] = useState<File | null>(null);
   const [transferenciaLista, setTransferenciaLista] = useState<number | null>(null); // numero_recibo
+  const [ventanillaLista, setVentanillaLista] = useState<{
+    recibo: number;
+    detalle: string;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
+  const [nombrePerfil, setNombrePerfil] = useState("");
 
   useEffect(() => {
     (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        const { data: p } = await supabase
+          .from("profiles").select("nombre_completo").eq("id", user.id).maybeSingle();
+        setNombrePerfil(p?.nombre_completo ?? "");
+      }
       if (pagoParam) {
         const { data: pago } = await supabase
           .from("payments")
@@ -163,8 +176,63 @@ export function Checkout({
     setOcupado(false);
   };
 
+  const pagarEnVentanilla = async () => {
+    setOcupado(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/pago-ventanilla", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          detalle?.pagoId ? { pagoId: detalle.pagoId } : { reservas: idsReservas }
+        ),
+      });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error ?? "No se pudo registrar la modalidad");
+      setVentanillaLista({ recibo: j.numero_recibo, detalle: j.detalle });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error inesperado");
+    }
+    setOcupado(false);
+  };
+
   if (error && !detalle) return <div className="px-4"><Alerta tono="peligro">{error}</Alerta></div>;
   if (!detalle) return <Cargando texto="Preparando tu pago…" />;
+
+  // ---------- Pantalla de éxito de pago en ventanilla ----------
+  if (ventanillaLista !== null) {
+    return (
+      <div className="space-y-4 px-4">
+        <Tarjeta className="p-6 text-center">
+          <div className="text-4xl">✅</div>
+          <h2 className="mt-3 text-lg font-bold">¡Reserva confirmada!</h2>
+          <p className="mt-2 text-sm leading-relaxed text-tinta-suave">
+            Elegiste <b>pago en ventanilla</b>: puedes cancelar{" "}
+            <b>{formatoUSD(detalle.total)}</b> en recepción antes o después de
+            tu hora reservada (Reglamento, pasos de reservación). Referencia:{" "}
+            <b>recibo N° {ventanillaLista.recibo}</b>. El administrador ya fue
+            notificado.
+          </p>
+        </Tarjeta>
+        <a
+          href={enlaceWhatsApp(whatsapp, {
+            tipo: "pago_ventanilla",
+            nombre: nombrePerfil || "co-med",
+            monto: detalle.total,
+            detalle: ventanillaLista.detalle,
+          })}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn-primario w-full !bg-[#25D366] py-3"
+        >
+          📲 Avisar por WhatsApp que pagaré en ventanilla
+        </a>
+        <button onClick={() => router.push("/reservas")} className="btn-fantasma w-full">
+          Ver mis reservas
+        </button>
+      </div>
+    );
+  }
 
   // ---------- Pantalla de éxito de transferencia ----------
   if (transferenciaLista !== null) {
@@ -282,18 +350,23 @@ export function Checkout({
           )}
         </div>
 
-        <div className="tarjeta p-4 opacity-80">
+        <button
+          onClick={pagarEnVentanilla}
+          disabled={ocupado}
+          className="tarjeta w-full p-4 text-left transition hover:border-acento cursor-pointer"
+        >
           <div className="flex items-center gap-3">
             <span className="text-2xl">💵</span>
-            <div>
-              <p className="text-sm font-bold">Efectivo en ventanilla</p>
+            <div className="flex-1">
+              <p className="text-sm font-bold">Pagaré en ventanilla (efectivo)</p>
               <p className="text-xs text-tinta-suave">
-                Puedes pagar en recepción antes o después de tu hora reservada;
-                el personal registrará tu pago.
+                Tu reserva se confirma al instante; cancelas en recepción antes
+                o después de tu hora reservada.
               </p>
             </div>
+            {ocupado && <span className="text-xs">…</span>}
           </div>
-        </div>
+        </button>
       </div>
     </div>
   );
